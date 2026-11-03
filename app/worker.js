@@ -1,4 +1,4 @@
-(function worker(){
+export default (function worker(){
   const BASE="https://raw.githubusercontent.com/luandystore-code/introvertido-y-exitoso/main/app/";
   const ASSETS={"/":"index.html","/index.html":"index.html","/app.js":"app.js","/data.js":"data.js","/style.css":"style.css","/sw.js":"sw.js","/manifest.webmanifest":"manifest.webmanifest","/icon.svg":"icon.svg"};
   const TYPES={html:"text/html; charset=utf-8",js:"text/javascript; charset=utf-8",css:"text/css; charset=utf-8",webmanifest:"application/manifest+json",svg:"image/svg+xml"};
@@ -60,5 +60,5 @@
     h.set("Content-Security-Policy","default-src 'self';script-src 'self';style-src 'self' 'unsafe-inline';img-src 'self' data:;connect-src 'self';font-src 'self';object-src 'none';base-uri 'none';form-action 'self';frame-ancestors 'none'");
     return new Response(request.method==="HEAD"?null:upstream.body,{status:200,headers:h});
   }
-  addEventListener("fetch",event=>event.respondWith(route(event.request,globalThis).catch(err=>{console.error("App error",String(err));return error("Servicio temporalmente no disponible",500)})));
+  return {fetch:(request,env)=>route(request,env).catch(err=>{console.error("App error",String(err));return error("Servicio temporalmente no disponible",500)})};
 })();
