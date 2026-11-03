@@ -1,0 +1,9 @@
+name = "introvertido-y-seguro"
+main = "worker.js"
+compatibility_date = "2026-11-03"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "introvertido-seguro-progress"
+database_id = "573fb84f-5e11-49f2-91e0-c8e8a521d5fc"
