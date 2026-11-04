@@ -9,6 +9,15 @@ window.CALMA_DATA = {
     "Dejo pasar oportunidades por no saber cómo presentarme.",
     "Después de una interacción, repaso mentalmente lo que hice mal."
   ],
+  // Agrupaciones orientativas de preguntas negativas; menor frecuencia reportada = menos dificultad.
+  // Cada área contiene entre una y tres preguntas; NO es una prueba clínica ni una escala validada.
+  focusAreas:[
+    {id:"claridad",name:"Expresar tus ideas",questions:[0,6],stage:0,day:8,summary:"Te cuesta compartir ideas o presentarte cuando surge una oportunidad.",action:"Prepara una idea, una razón y un siguiente paso con la fórmula 1-1-1.",tip:"Ensaya una idea en voz alta y exprésala en la próxima conversación."},
+    {id:"energia",name:"Cuidar tu energía social",questions:[4],stage:1,day:5,summary:"La energía que requieren los grupos puede dificultarte participar.",action:"Planea una meta pequeña y una pausa antes de la próxima reunión.",tip:"Entra con una meta sencilla: participar una vez, sin exigirte más."},
+    {id:"juicio",name:"Miedo al juicio y sobreanálisis",questions:[1,5,7],stage:2,day:22,summary:"Pensar demasiado o temer la opinión de otros puede frenar tus acciones.",action:"Haz una contribución breve sin esperar la frase perfecta.",tip:"Pregúntate qué puedes aportar, en lugar de intentar adivinar qué pensarán."},
+    {id:"limites",name:"Poner límites con respeto",questions:[3],stage:3,day:11,summary:"Expresar un desacuerdo o decir no puede resultarte difícil.",action:"Practica un no pequeño con una frase respetuosa.",tip:"Escribe tu límite en una oración antes de decirlo."},
+    {id:"conexion",name:"Iniciar conversaciones",questions:[2],stage:4,day:3,summary:"Dar el primer paso para conectar con alguien puede costarte.",action:"Inicia una conversación de dos minutos usando una pregunta abierta.",tip:"Comienza con una pregunta breve relacionada con el momento."}
+  ],
   method:[
     {letter:"C",name:"Clarifica",title:"Habla con intención",desc:"Organiza tu mensaje con una idea, una razón y un siguiente paso (1-1-1).",example:"Mi idea es ____. Ayudaría porque ____. Propongo empezar con ____.",questions:["Una idea que quiero aportar","Mi razón principal","El siguiente paso que propondré"],checks:["Preparé mi mensaje en una frase","Practiqué la fórmula 1-1-1","Expresé o ensayé mi idea"]},
     {letter:"A",name:"Acepta",title:"Diseña tu energía social",desc:"Preparar, pausar y elegir interacciones sostenibles también es una habilidad.",example:"Preparo una meta pequeña antes de cada reunión y permito descansos si los necesito.",questions:["Una situación que consume mi energía","Mi objetivo mínimo","Cómo cuidaré mi energía"],checks:["Definí una meta alcanzable","Planifiqué una pausa","Elegí una conversación significativa"]},
