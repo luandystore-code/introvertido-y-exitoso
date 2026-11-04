@@ -19,6 +19,7 @@ function validateRecords(source){
  for(const [key,record] of Object.entries(source)){
   if(!allowed.test(key)||!record||typeof record!=="object"||Array.isArray(record))continue;
   const out={answers:{},checks:{},scores:{},done:record.done===true};
+  if(Number.isSafeInteger(record.updatedAt)&&record.updatedAt>=1600000000000&&record.updatedAt<=Date.now()+86400000)out.updatedAt=record.updatedAt;
   if(record.answers&&typeof record.answers==="object"&&!Array.isArray(record.answers))for(const [id,answer] of Object.entries(record.answers))if(/^[a-z0-9_-]{1,30}$/i.test(id)&&typeof answer==="string")out.answers[id]=answer.slice(0,2000);
   if(record.checks&&typeof record.checks==="object"&&!Array.isArray(record.checks))for(const [id,checked] of Object.entries(record.checks))if(/^[a-z0-9_-]{1,30}$/i.test(id))out.checks[id]=checked===true;
   if(record.scores&&typeof record.scores==="object"&&!Array.isArray(record.scores))for(const [id,score] of Object.entries(record.scores))if(/^[a-z0-9_-]{1,30}$/i.test(id)&&Number.isInteger(score)&&score>=0&&score<=10)out.scores[id]=score;
@@ -30,7 +31,7 @@ function localLoad(){
  try{const saved=localStorage.getItem(STORAGE_KEY);records=saved?validateRecords(JSON.parse(saved)):{};}
  catch(e){records={};saveStatus.textContent="⚠ Error al leer avances guardados";}
 }
-function changed(){localSave();}
+function changed(k){value(k).updatedAt=Date.now();localSave();}
 function applyImported(source){
  const imported=validateRecords(source);
  if(!Object.keys(imported).length)throw Error("No se encontraron ejercicios guardados.");
@@ -58,16 +59,16 @@ function checkbox(k,id,label){return `<label class="check"><input type="checkbox
 function complete(k,label){return `<label class="check"><input type="checkbox" data-key="${k}" data-done="1" ${value(k).done?"checked":""}><span><b>${escapeHTML(label)}</b></span></label>`;}
 function scale(k,id,max){let html=`<div class="scale" role="group" aria-label="Escala de 0 a ${max}">`;for(let i=0;i<=max;i++){html+=`<label><input type="radio" name="${k}-${id}" data-key="${k}" data-score="${id}" value="${i}" ${value(k).scores[id]===i?"checked":""}><span>${i}</span></label>`;}return html+"</div>";}
 function btn(text,attrs,kind=""){return `<button class="btn ${kind}" ${attrs}>${text}</button>`;}
-function bar(v,max){return `<div class="progress" role="progressbar" aria-valuenow="${v}" aria-valuemax="${max}"><span style="width:${v/max*100}%"></span></div>`;}
+function bar(v,max,label="Progreso"){return `<div class="progress" role="progressbar" aria-label="${escapeHTML(label)}" aria-valuemin="0" aria-valuenow="${v}" aria-valuemax="${max}"><span style="width:${Math.min(100,Math.max(0,v/max*100))}%"></span></div>`;}
 function countDays(){return DATA.days.filter((_,i)=>value("day-"+(i+1)).done).length;}
 function countStages(){return DATA.method.filter((_,i)=>value("stage-"+i).done).length;}
 function home(){
  const completed=countDays(),stageCount=countStages();
  const next=Math.max(1,DATA.days.findIndex((_,i)=>!value("day-"+(i+1)).done)+1||30);
  return `<section class="hero"><span class="pill gold">TU VOZ IMPORTA</span><h2>No necesitas hablar más fuerte. Necesitas aprender a hacerte escuchar.</h2><p>Aprende, escribe tus respuestas y construye confianza con acciones pequeñas.</p>${btn("Continuar con mi entrenamiento","data-view='reto' data-day='"+next+"'","gold")}</section>
- <div class="cardgrid metrics"><div class="metric"><strong>${completed}/30</strong><small>Retos completados</small>${bar(completed,30)}</div><div class="metric"><strong>${stageCount}/5</strong><small>Etapas del método</small>${bar(stageCount,5)}</div><div class="metric"><strong>${value("assessment-start").done?"✓":"—"}</strong><small>Evaluación inicial</small><p>${btn("Responder","data-view='evaluacion' data-assessment='start'","secondary sm")}</p></div></div>
+ <div class="cardgrid metrics"><div class="metric"><strong>${Math.round(completed/30*100)}%</strong><small>${completed} de 30 retos completados</small>${bar(completed,30,"Reto de 30 días")}<p>${btn("Ver mis avances","data-view=\'mi-espacio\'","secondary sm")}</p></div><div class="metric"><strong>${stageCount}/5</strong><small>Etapas del método</small>${bar(stageCount,5)}</div><div class="metric"><strong>${value("assessment-start").done?"✓":"—"}</strong><small>Evaluación inicial</small><p>${btn("Responder","data-view='evaluacion' data-assessment='start'","secondary sm")}</p></div></div>
  <div class="two"><section class="panel"><span class="eyebrow">SIGUIENTE RETO</span><h2 class="section-title">Día ${next}: ${escapeHTML(DATA.days[next-1][0])}</h2><p>${escapeHTML(DATA.days[next-1][1])}</p>${btn("Ir al reto","data-view='reto' data-day='"+next+"'")}</section><section class="panel"><span class="eyebrow">TU RECORRIDO</span><h2 class="section-title">C.A.L.M.A.</h2><p>Clarifica → Acepta → Libérate → Muévete → Actúa.</p>${btn("Abrir método","data-view='metodo'","secondary")}</section></div>
- <div class="notice" style="margin-top:20px"><b>Tu espacio, sin contraseña:</b> esta herramienta se abre directamente. Las respuestas se guardan solo en este navegador, no en Hotmart ni en la nube. Descarga un respaldo desde «Mi espacio» para conservarlas. El enlace de la app es público.</div>`;
+ <div class="notice" style="margin-top:20px"><b>Tu espacio, sin contraseña:</b> esta herramienta se abre directamente. Las respuestas se guardan solo en este navegador, no en Hotmart ni en la nube. Descarga un respaldo desde «Mis avances» para conservarlas. El enlace de la app es público.</div>`;
 }
 function method(){
  const s=DATA.method[stage],k="stage-"+stage;
@@ -101,14 +102,99 @@ function evaluation(){
  return `<section class="panel"><span class="eyebrow">${assessment==="start"?"PUNTO DE PARTIDA":"EVALUACIÓN FINAL"}</span><h2 class="section-title">Ocho preguntas para medir tus avances</h2><p>Marca del 0 (nunca) al 4 (casi siempre). No es una prueba clínica.</p>
  ${DATA.questions.map((x,i)=>`<div class="formfield" style="padding:12px 0;border-bottom:1px solid #e4e8df"><label>${i+1}. ${escapeHTML(x)}</label>${scale(k,"q"+i,4)}</div>`).join("")}
  ${field(k,"goal",assessment==="start"?"¿Qué conducta quiero mejorar?":"¿Qué conducta concreta logré mejorar?")}${complete(k,"He terminado esta evaluación")}
- <div class="row">${btn("Volver a mi espacio","data-view='mi-espacio'","secondary")}${btn("Reto de 30 días","data-view='reto'")}</div></section>`;
+ <div class="row">${btn("Volver a mis avances","data-view='mi-espacio'","secondary")}${btn("Reto de 30 días","data-view='reto'")}</div></section>`;
+}
+
+function hasWork(k){
+ const r=records[k];if(!r)return false;
+ return r.done===true
+  ||Object.values(r.answers||{}).some(v=>typeof v==="string"&&v.trim().length>0)
+  ||Object.values(r.checks||{}).some(Boolean)
+  ||Object.values(r.scores||{}).some(n=>Number.isInteger(n));
+}
+function activityName(key){
+ if(key.startsWith("day-")){
+  const n=Number(key.slice(4));return n>=1&&n<=30?"Día "+n+" · "+DATA.days[n-1][0]:"Actividad";
+ }
+ if(key.startsWith("stage-")){
+  const n=Number(key.slice(6));return n>=0&&n<5?"Método C.A.L.M.A. · "+DATA.method[n].name:"Etapa";
+ }
+ if(key==="assessment-start")return "Evaluación inicial";
+ if(key==="assessment-end")return "Evaluación final";
+ const names={"tool-network":"Networking","tool-meeting":"Reuniones","tool-limits":"Límites","tool-scripts":"Frases rápidas"};
+ return names[key]||"Herramientas prácticas";
+}
+function activityTarget(key){
+ if(key.startsWith("day-"))return "data-day='"+Number(key.slice(4))+"'";
+ if(key.startsWith("stage-"))return "data-stage='"+Number(key.slice(6))+"'";
+ if(key==="assessment-start")return "data-view='evaluacion' data-assessment='start'";
+ if(key==="assessment-end")return "data-view='evaluacion' data-assessment='end'";
+ const names={"tool-network":"networking","tool-meeting":"reuniones","tool-limits":"limites","tool-scripts":"guiones"};
+ return "data-tool='"+(names[key]||"networking")+"'";
 }
 function space(){
- return `<div class="two"><section class="panel"><h2 class="section-title">Mis evaluaciones</h2><p>Compara tus respuestas antes y después de practicar.</p>${btn("Evaluación inicial","data-view='evaluacion' data-assessment='start'","secondary")} ${btn("Evaluación final","data-view='evaluacion' data-assessment='end'","secondary")}</section><section class="panel"><h2 class="section-title">Mi progreso sin contraseña</h2><p>Esta herramienta se abre directamente desde Hotmart Club. Tus respuestas permanecen <b>solo en este navegador y dispositivo</b>.</p><p class="muted">Si cambias de celular, usas otro navegador o borras los datos, tu avance no aparecerá automáticamente. Exporta un respaldo para recuperarlo después.</p></section></div>
- <section class="panel" style="margin-top:18px"><h2 class="section-title">Respaldo y privacidad</h2><p>Tu información se guarda localmente en este dispositivo. No se suben tus respuestas a Cloudflare ni a Meta Ads desde esta versión.</p><div class="row">${btn("Descargar respaldo","data-action='export'","secondary")} ${btn("Importar respaldo","data-action='import-file'","secondary")}</div><p class="muted">El archivo contiene tus respuestas personales. Guárdalo de manera privada.</p><div class="row">${btn("Recuperar avances de cuenta anterior","data-action='legacy'","secondary sm")}</div><hr><p class="muted">Borrar tu progreso elimina solo la copia local de esta versión. No elimina automáticamente cuentas anteriores guardadas en la nube.</p>${btn("Borrar progreso de este dispositivo","data-action='delete'","secondary")}</section>`;
+ const completed=countDays(),stages=countStages(),pct=Math.round(completed/30*100);
+ const evaluations=["assessment-start","assessment-end"].filter(k=>value(k).done).length;
+ const days=DATA.days.map((x,i)=>({number:i+1,title:x[0],done:value("day-"+(i+1)).done,started:hasWork("day-"+(i+1))}));
+ const inProgress=days.filter(x=>x.started&&!x.done).length;
+ const next=days.find(x=>!x.done);
+ const nextWeek=Math.floor(((next?next.number:30)-1)/7);
+ const weeks=Array.from({length:5},(_,w)=>{
+  const slice=days.slice(w*7,(w+1)*7),done=slice.filter(x=>x.done).length;
+  const rows=slice.map(x=>`<div class="advance-day ${x.done?"is-done":x.started?"is-started":""}">
+   <span class="advance-day-number" aria-hidden="true">${String(x.number).padStart(2,"0")}</span>
+   <div class="advance-day-body"><strong>Día ${x.number} · ${escapeHTML(x.title)}</strong><span class="advance-status">${x.done?"✓ Completado":x.started?"● En práctica":"○ Pendiente"}</span></div>
+   ${btn(x.done?"Revisar":x.started?"Continuar":"Empezar","data-day='"+x.number+"'","secondary sm")}
+  </div>`).join("");
+  return `<details class="advance-week" ${w===nextWeek?"open":""}><summary><b>Semana ${w+1} · Días ${slice[0].number}–${slice[slice.length-1].number}</b><span>${done}/${slice.length} completados</span></summary><div class="advance-days">${rows}</div></details>`;
+ }).join("");
+ const stageRows=DATA.method.map((m,i)=>{
+  const k="stage-"+i,record=value(k);
+  return `<div class="advance-stage"><span class="advance-stage-dot ${record.done?"done":""}">${record.done?"✓":m.letter}</span><span><b>${escapeHTML(m.name)}</b><small>${record.done?"Completada":hasWork(k)?"En práctica":"Pendiente"}</small></span>${btn(record.done?"Revisar":"Abrir","data-stage='"+i+"'","secondary sm")}</div>`;
+ }).join("");
+ const recent=Object.keys(records).filter(hasWork).sort((a,b)=>(records[b].updatedAt||0)-(records[a].updatedAt||0)).slice(0,5);
+ const recentRows=recent.map(k=>{
+  const r=records[k],date=Number.isSafeInteger(r.updatedAt)?new Date(r.updatedAt).toLocaleDateString("es-PE",{day:"numeric",month:"short",year:"numeric"}):"Registro anterior";
+  return `<div class="advance-activity"><div><b>${escapeHTML(activityName(k))}</b><small>${r.done?"Completado":"En práctica"} · ${escapeHTML(date)}</small></div>${btn("Abrir",activityTarget(k),"secondary sm")}</div>`;
+ }).join("");
+ return `<section class="advance-hero">
+ <div><span class="eyebrow">MI RETO DE 30 DÍAS</span><h2>Así vas construyendo tu seguridad</h2><p>Cuenta cada reto como completado cuando lo marques al finalizar la práctica. Puedes avanzar a tu ritmo.</p></div>
+ <div class="advance-percent"><strong>${pct}%</strong><small>del reto completado</small></div>
+ <div class="advance-fullbar">${bar(completed,30,"Porcentaje completado del reto de 30 días")}</div>
+ </section>
+ <div class="cardgrid advance-metrics">
+  <div class="metric"><strong>${completed}<span class="advance-denom">/30</span></strong><small>Retos completados</small></div>
+  <div class="metric"><strong>${inProgress}</strong><small>Retos en práctica</small></div>
+  <div class="metric"><strong>${stages}<span class="advance-denom">/5</span></strong><small>Etapas C.A.L.M.A. completadas</small></div>
+ </div>
+ <section class="panel advance-next">
+  <span class="eyebrow">${next?"TU PRÓXIMO RETO":"RETO COMPLETADO"}</span>
+  <h2 class="section-title">${next?"Día "+next.number+" · "+escapeHTML(next.title):"¡Completaste los 30 retos!"}</h2>
+  <p class="muted">${next?"Tienes "+(30-completed)+" retos por completar. Puedes regresar a cualquiera cuando lo necesites.":"Puedes revisar tus respuestas y completar la evaluación final para comparar tus avances."}</p>
+  ${next?btn(next.started?"Continuar con este reto":"Empezar este reto","data-day='"+next.number+"'"):btn("Hacer evaluación final","data-view='evaluacion' data-assessment='end'")}
+ </section>
+ <section class="panel advance-section"><div class="row between"><div><span class="eyebrow">TU RUTA</span><h2 class="section-title">Qué has hecho en los 30 días</h2></div><span class="pill">${pct}% completado</span></div>
+ <p class="muted">«En práctica» significa que guardaste alguna respuesta, escala o checklist, pero aún no marcaste ese día como completado.</p>
+ <div class="advance-weeks">${weeks}</div></section>
+ <div class="two advance-two"><section class="panel"><span class="eyebrow">MÉTODO C.A.L.M.A.</span><h2 class="section-title">${stages} de 5 etapas</h2><div class="advance-stages">${stageRows}</div></section>
+ <section class="panel"><span class="eyebrow">EVALUACIONES</span><h2 class="section-title">${evaluations} de 2 realizadas</h2>
+ <p>${value("assessment-start").done?"✓ Evaluación inicial completada":"○ Evaluación inicial pendiente"}</p>
+ ${btn(value("assessment-start").done?"Revisar evaluación inicial":"Hacer evaluación inicial","data-view='evaluacion' data-assessment='start'","secondary")}
+ <p style="margin-top:20px">${value("assessment-end").done?"✓ Evaluación final completada":"○ Evaluación final pendiente"}</p>
+ ${btn(value("assessment-end").done?"Revisar evaluación final":"Hacer evaluación final","data-view='evaluacion' data-assessment='end'","secondary")}
+ <p class="muted">Estas evaluaciones no se incluyen en el porcentaje de los 30 retos.</p></section></div>
+ <section class="panel advance-section"><span class="eyebrow">TU ACTIVIDAD</span><h2 class="section-title">Lo que has trabajado recientemente</h2>
+ ${recentRows||'<p class="muted">Todavía no tienes actividades guardadas. Comienza con el primer reto o la evaluación inicial.</p>'}
+ </section>
+ <section class="panel advance-section"><h2 class="section-title">Respaldo y privacidad</h2><p>Tus avances están guardados en este navegador, sin contraseña. No se sincronizan automáticamente entre dispositivos.</p>
+ <div class="row">${btn("Descargar respaldo","data-action='export'","secondary")}${btn("Importar respaldo","data-action='import-file'","secondary")}</div>
+ <p class="muted">El archivo descargado incluye tus respuestas personales. Guárdalo de manera privada.</p>
+ <div class="row">${btn("Recuperar avances de cuenta anterior","data-action='legacy'","secondary sm")}</div>
+ <p class="muted">Borrar el progreso elimina únicamente los datos locales de esta versión, no cuentas anteriores.</p>
+ ${btn("Borrar progreso de este dispositivo","data-action='delete'","secondary")}</section>`;
 }
 function render(){
- const titles={"inicio":"Tu progreso empieza aquí","metodo":"Método C.A.L.M.A.","reto":"Tu reto de 30 días","herramientas":"Herramientas prácticas","evaluacion":"Mis evaluaciones","mi-espacio":"Mi espacio"};
+ const titles={"inicio":"Tu progreso empieza aquí","metodo":"Método C.A.L.M.A.","reto":"Tu reto de 30 días","herramientas":"Herramientas prácticas","evaluacion":"Mis evaluaciones","mi-espacio":"Mis avances"};
  pageTitle.textContent=titles[view];
  nav.querySelectorAll("[data-page]").forEach(x=>x.classList.toggle("active",x.dataset.page===view));
  main.innerHTML=view==="inicio"?home():view==="metodo"?method():view==="reto"?challenge():view==="herramientas"?tools():view==="evaluacion"?evaluation():space();
@@ -148,7 +234,7 @@ document.addEventListener("click",async ev=>{
  if(b.dataset.page||b.dataset.view){view=b.dataset.page||b.dataset.view;if(b.dataset.day)day=Number(b.dataset.day);if(b.dataset.assessment)assessment=b.dataset.assessment;document.querySelector(".side").classList.remove("expanded");render();scrollTo(0,0);return;}
  if(b.dataset.stage!==undefined){view="metodo";stage=Number(b.dataset.stage);render();scrollTo(0,0);return;}
  if(b.dataset.day){view="reto";day=Number(b.dataset.day);render();scrollTo(0,0);return;}
- if(b.dataset.tool){tool=b.dataset.tool;render();return;}
+ if(b.dataset.tool){view="herramientas";tool=b.dataset.tool;render();scrollTo(0,0);return;}
  const action=b.dataset.action;if(!action)return;
  if(action==="close")close();
  if(action==="export")exportBackup();
