@@ -1,4 +1,4 @@
-# Introvertido y Seguro — landing de ventas (en preparación)
+# Introvertido y Seguro — landing de ventas
 
 Landing existente, renovada para el producto **Introvertido y Seguro | Método C.A.L.M.A. de 30 Días**, producto Hotmart **8875939**.
 
@@ -67,5 +67,17 @@ No se publica aquí el enlace público de la app para evitar distribuir el bono 
 ## Tracking
 
 El código de la landing mantiene el Meta Pixel anteriormente instalado, los eventos PageView y ViewContent, primera/última atribución y persistencia de UTMs/click IDs en localStorage. Los siete enlaces al checkout pay.hotmart.com/F108322703A usan el decorador de app.js para agregar los parámetros de atribución automáticamente.
+
+## Demo real y optimización — 4 de noviembre de 2026
+
+- Demo real de 69 segundos inmediatamente después del hero; portada basada en la grabación real.
+- MP4 H.264 de 720 × 1440, 7,4 MB, sin audio. `preload="none"`, controles nativos y reproducción dentro de la página en móvil.
+- Capítulos: reto, registro, método, herramientas y avances. En móvil el reproductor aparece antes de la explicación detallada; la barra de compra se oculta durante la reproducción.
+- Mensaje de compra centrado en acciones concretas; garantía de 7 días destacada y preguntas de compra primero.
+- Eventos personalizados `AppDemoPlay`, `AppDemoEnd` y `CheckoutLinkClick`; este último registra clics hacia Hotmart, no compras ni checkouts completados. `AppDemoEnd` indica llegar al final, incluso usando capítulos.
+- `landing-worker.mjs` conserva el origen en GitHub y permite servir los dos archivos multimedia con su tipo correcto, transmitiendo el video sin cargarlo entero en memoria.
+- Validación en navegador: 320, 390, 768 y 1440 px; sin desbordamiento, atribución conservada, capítulos operativos y sin errores JavaScript.
+
+La mejora de conversión es una hipótesis a medir con tráfico y compras reales. Las capturas y los registros de la demo no constituyen testimonios de compradores.
 
 **No cambiar** el Worker receptor de Webhook ni la app interactiva al configurar el checkout: son recursos independientes.

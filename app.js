@@ -338,6 +338,57 @@
      11. INICIAR
   ===================================================== */
 
+  function setupDemo() {
+    const video = document.getElementById('app-demo');
+    const chapters = document.querySelector('.demo-chapters');
+    if (!video || !chapters) return;
+    chapters.hidden = false;
+    chapters.addEventListener('click', function(event) {
+      const button = event.target.closest('[data-demo-time]');
+      if (!button) return;
+      const time = Number(button.dataset.demoTime);
+      if (!Number.isFinite(time)) return;
+      const seek = function() {
+        video.currentTime = Math.min(time, video.duration || time);
+        video.play().catch(function() { /* Native controls remain available. */ });
+      };
+      if (video.readyState >= 1) seek();
+      else {
+        video.addEventListener('loadedmetadata', seek, {once: true});
+        video.load();
+      }
+      video.focus();
+    });
+    const milestones = new Set();
+    const track = function(name, data) {
+      if (typeof window.fbq === 'function') window.fbq('trackCustom', name, data);
+    };
+    video.addEventListener('play', function() {
+      document.body.classList.add('demo-playing');
+      if (milestones.has('play')) return;
+      milestones.add('play');
+      track('AppDemoPlay', {content_name: 'Demo Introvertido y Seguro'});
+    });
+    video.addEventListener('pause', function() { document.body.classList.remove('demo-playing'); });
+    video.addEventListener('ended', function() {
+      document.body.classList.remove('demo-playing');
+      if (milestones.has('ended')) return;
+      milestones.add('ended');
+      track('AppDemoEnd', {content_name: 'Demo Introvertido y Seguro'});
+    });
+    document.querySelectorAll('[data-hotmart]').forEach(function(link) {
+      link.addEventListener('click', function(event) {
+        if (event.defaultPrevented) return;
+        track('CheckoutLinkClick', {
+          content_name: 'Introvertido y Seguro',
+          placement: link.closest('section')?.id || (link.closest('.mobile-offer') ? 'mobile' : 'header'),
+          value: 9.99,
+          currency: 'USD'
+        });
+      });
+    });
+  }
+
   if(
     document.readyState ===
     'loading'
@@ -346,12 +397,14 @@
     document.addEventListener('DOMContentLoaded', function() {
       decorateHotmartLinks();
       setupMobileCheckoutBar();
+      setupDemo();
     });
 
   } else {
 
     decorateHotmartLinks();
     setupMobileCheckoutBar();
+    setupDemo();
 
   }
 
