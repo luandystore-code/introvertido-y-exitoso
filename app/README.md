@@ -1,32 +1,40 @@
-# Introvertido y Seguro — app interactiva (piloto)
+# Introvertido y Seguro — app de práctica sin contraseña
 
-Aplicación PWA separada de la landing de ventas. Contenido adaptado de los seis PDF de la edición ilustrada.
+App PWA complementaria del curso en Hotmart Club, producto Hotmart `8875939`, totalmente separada de la landing comercial.
 
-## Funciones
+## Funcionamiento actual
 
-- 5 etapas C.A.L.M.A. con preguntas, notas y checklist.
-- Reto de 30 días con versión fácil y escalas antes/después.
-- Evaluación inicial y final de 8 preguntas.
-- Herramientas de reuniones, networking, límites y frases.
-- Guardado automático en Cloudflare D1 y copia local en el navegador.
-- Registro e ingreso con nombre de usuario elegido y contraseña personal de 12 a 128 caracteres.\n- Derivación de credencial mediante PBKDF2-SHA256 (310 000 iteraciones) en el navegador; el servidor conserva su hash SHA-256. El usuario se normaliza a minúsculas.\n- Las cuentas anteriores siguen usando su clave de recuperación original.
-- Exportar progreso a JSON y eliminar todos los datos.
-- Instalable como PWA. No contiene Meta Pixel.
+- Acceso directo sin registro, contraseña ni petición de correo.
+- Método C.A.L.M.A. en 5 etapas, reto de 30 días, autoevaluaciones y herramientas prácticas.
+- Respuestas, checklists y puntuaciones guardados en `localStorage` del navegador con clave `calma_progreso_local_v1`.
+- Exportación de respaldo JSON desde «Mi espacio» e importación en otro navegador.
+- Opción voluntaria para recuperar los avances de una cuenta antigua de la app mediante su credencial anterior, sin borrarla del backend.
+- Botón para eliminar solo los avances locales de esta versión.
+- No se envían respuestas nuevas a D1, Hotmart ni Meta Ads desde la app sin contraseña.
 
-## Seguridad y límites del piloto
+## Advertencias importantes
 
-**Aún NO valida compras en Hotmart**. No promocionar como producto exclusivo hasta conectar un flujo de acceso autenticado y verificación de pago, cancelación y reembolso. Cualquiera puede crear un espacio durante el piloto. La clave actúa como credencial: si se comparte o se pierde puede comprometerse la confidencialidad o el acceso.
+- **El enlace es público.** Colocarlo dentro de Hotmart Club no restringe el acceso a quien obtenga la URL. Hotmart Club controla el acceso al contenido del curso, pero no autentica la app de Cloudflare.
+- La app no se sincroniza automáticamente entre dispositivos, navegadores ni sesiones privadas. Borrar los datos del navegador elimina el progreso si no se descargó respaldo.
+- Los registros pueden contener reflexiones privadas: los archivos de respaldo deben guardarse de forma segura.
+- El Worker conserva la API antigua de cuentas únicamente para que usuarios previos puedan recuperar sus registros; esta app ya no crea cuentas ni realiza escrituras en D1.
+- No eliminar las tablas `profiles`, `entries` y `user_handles` hasta resolver o descartar una migración de cuentas anteriores.
+- El Webhook independiente `hotmart-calma-webhook` puede desactivarse desde Hotmart cuando no se necesita habilitar accesos por compra. Mantenerlo no altera esta experiencia de acceso libre.
 
-Para cuentas nuevas, el usuario elige un identificador y una contraseña; el navegador deriva la credencial usada como token y el backend guarda un hash de ese token, no la contraseña en texto. La credencial derivada permanece en el navegador para recordar la sesión. No hay recuperación por correo, segundo factor ni rate limiting endurecido todavía. No usar como sistema final de acceso comercial sin auditoría, protección antiabuso y enlace a compra verificada.\n\nLas cuentas antiguas mantienen el acceso por clave aleatoria de recuperación. No existe migración automática de datos a una cuenta nueva.
+## Publicación
 
-## Deployment
+URL: `https://introvertido-y-seguro.luandylabs.workers.dev/`
 
-Cloudflare Worker separado `introvertido-y-seguro` con binding D1 `DB`, base de datos `introvertido-seguro-progress`. El Worker obtiene los archivos públicos de `main/app` de GitHub. No modificar el Worker existente `introvertido-y-exitoso`, que sirve la landing comercial.
+Cloudflare Worker: `introvertido-y-seguro`, sirve los assets públicos de `main/app` de GitHub. Se mantiene sin cambios la landing independiente `introvertido-y-exitoso`.
 
-## Integración futura Hotmart
+### Integración con Hotmart Club
 
-- Webhook firmado o verificado en backend; validar evento con API de Hotmart si procede.
-- Tabla de compras y relación comprador → identidad.
-- Autenticación de usuario reforzada (verificación por correo, recuperación de contraseña, rate limiting) y revocación por cancelación/reembolso.
-- Nunca exponer credenciales Hotmart ni confiar en códigos de pedido enviados desde el navegador.
-- Añadir política de privacidad, términos y borrado de datos antes de comercializar.
+Añadir una clase o recurso “Mi entrenamiento interactivo C.A.L.M.A.” con el enlace público anterior. No marcar el producto como área externa, pues Hotmart Club ya gestiona el acceso al curso.
+
+## Comprobación sugerida
+
+1. Abrir app en pestaña nueva: debe mostrar Inicio directamente sin modal.
+2. Escribir un ejercicio; recargar y comprobar persistencia.
+3. Marcar un reto y verificar el contador.
+4. Descargar respaldo, borrar progreso local e importar el archivo.
+5. Verificar que el curso en Hotmart Club y la landing comercial sigan intactos.
