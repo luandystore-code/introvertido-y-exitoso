@@ -19,7 +19,7 @@ export default {
       if (request.headers.has(name)) headers.set(name,request.headers.get(name));
     }
     try {
-      const upstream = await fetch(RAW_BASE + file, {
+      const upstream = await fetch(RAW_BASE + file + '?release=demo-20261104', {
         method:request.method, headers,
         cf:file === 'index.html' ? {cacheEverything:false} : {cacheEverything:true,cacheTtl:60}
       });
