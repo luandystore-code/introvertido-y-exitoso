@@ -74,3 +74,107 @@ window.CALMA_DATA = {
     ["Networking","¿Qué te trajo a este evento?","¿En qué estás trabajando ahora?","Me gustó hablar contigo. ¿Conectamos?"]
   ]
 };
+
+(function(){
+"use strict";
+const D=window.CALMA_DATA;
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function button(label,props,kind="secondary"){return `<button class="btn ${kind}" ${props}>${esc(label)}</button>`;}
+function report(records,phase){
+ const r=records["assessment-"+phase]||{},scores=D.questions.map((_,i)=>r.scores?.["q"+i]);
+ const answered=scores.filter(v=>Number.isInteger(v)&&v>=0&&v<=4).length;
+ const complete=answered===8&&r.done===true;
+ return {scores,answered,complete,total:complete?scores.reduce((a,b)=>a+b,0):null};
+}
+function average(rep,area){return rep.complete?area.questions.reduce((t,i)=>t+rep.scores[i],0)/area.questions.length:null;}
+function fmt(v){return v.toLocaleString("es-PE",{minimumFractionDigits:1,maximumFractionDigits:1});}
+function bar(score,cls,label){return `<div class="insight-track" role="img" aria-label="${esc(label)}: ${fmt(score)} de 4"><span class="${cls}" style="width:${Math.max(0,Math.min(100,score/4*100))}%"></span></div>`;}
+function feeling(records){
+ let n=0,b=0,a=0,lower=0;
+ for(let i=1;i<=30;i++){const s=records["day-"+i]?.scores||{},x=s.before,y=s.after;
+ if(Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&x<=10&&y>=0&&y<=10){n++;b+=x;a+=y;if(y<x)lower++;}}
+ return {n,b:n?b/n:0,a:n?a/n:0,lower};
+}
+function render(records){
+ const first=report(records,"start"),last=report(records,"end"),both=first.complete&&last.complete,now=last.complete?last:first.complete?first:null;
+ let h=`<section class="advance-hero insight-hero"><div><span class="eyebrow">ANÁLISIS PERSONAL</span><h2>Descubre qué mejorar y reconoce tus avances</h2>
+ <p>Identifica hábitos concretos para practicar. No necesitas cambiar tu personalidad para ganar seguridad.</p></div>
+ <div class="advance-percent"><strong>${Number(first.complete)+Number(last.complete)}/2</strong><small>evaluaciones</small></div></section>
+ <div class="two insight-assessments">
+ <section class="panel"><span class="eyebrow">PUNTO DE PARTIDA</span><h2 class="section-title">Evaluación inicial</h2>
+ <p>${first.complete?"✓ Completada":first.answered+" de 8 preguntas respondidas"}</p>
+ ${button(first.complete?"Revisar respuestas":"Completar evaluación","data-view='evaluacion' data-assessment='start'")}</section>
+ <section class="panel"><span class="eyebrow">MI SITUACIÓN DESPUÉS</span><h2 class="section-title">Evaluación final</h2>
+ <p>${last.complete?"✓ Completada":last.answered+" de 8 preguntas respondidas"}</p>
+ ${button(last.complete?"Revisar respuestas":"Completar evaluación","data-view='evaluacion' data-assessment='end'")}</section></div>`;
+ if(!now)return h+`<section class="panel insight-section"><h2 class="section-title">Primero descubre tu punto de partida</h2>
+ <p>Responde las ocho preguntas y recibirás áreas de práctica ordenadas por las dificultades que reportes con más frecuencia.</p>
+ ${button("Empezar la evaluación inicial","data-view='evaluacion' data-assessment='start'","")}</section>`;
+ const area=D.focusAreas.map(a=>({...a,current:average(now,a),before:average(first,a),after:average(last,a)}));
+ const ranked=area.filter(a=>a.current>0).sort((a,b)=>b.current-a.current||a.stage-b.stage);
+ const suggestions=ranked.length?ranked.slice(0,3):area.slice(0,2);
+ const selected=area.find(a=>a.id===records["focus-plan"]?.answers?.area)||suggestions[0];
+ if(both){
+  const diff=first.total-last.total,text=diff>0?diff+" puntos menos":diff<0?(-diff)+" puntos más":"Sin cambio en el total";
+  h+=`<section class="panel insight-section"><span class="eyebrow">COMPARA TU EVOLUCIÓN</span><h2 class="section-title">Dificultades reportadas: antes y ahora</h2>
+  <div class="insight-totals"><div><strong>${first.total}<small>/32</small></strong><span>Inicial</span></div><span aria-hidden="true">→</span>
+  <div><strong>${last.total}<small>/32</small></strong><span>Final</span></div><p>${text}</p></div>
+  <p class="muted">Un valor menor indica que reportas esas dificultades con menos frecuencia. Es una reflexión orientativa, no una puntuación clínica ni una garantía de cambio.</p></section>`;
+ }else{
+  h+=`<section class="panel insight-section"><span class="eyebrow">TU PUNTO DE PARTIDA</span><h2 class="section-title">${now.total} puntos de 32 posibles</h2>
+  <p>Identifica qué trabajar desde hoy. Cuando hayas practicado, completa la evaluación final para comparar las mismas preguntas.</p>
+  ${button("Hacer evaluación final","data-view='evaluacion' data-assessment='end'")}</section>`;
+ }
+ h+=`<section class="panel insight-section"><span class="eyebrow">TUS ÁREAS</span><h2 class="section-title">${both?"Qué dificultades han cambiado":"En qué puedes enfocarte"}</h2>
+ <p class="muted">Promedio de frecuencia de 0 = nunca a 4 = casi siempre. Una barra más larga indica una dificultad reportada con más frecuencia.</p>
+ <div class="insight-areas">${area.map(a=>{
+  const diff=both?a.before-a.after:0;
+  const label=both?(diff>.15?"↓ "+fmt(diff)+" menos":diff<-.15?"↑ "+fmt(-diff)+" más":"Sin cambio"):
+   a.current>=2.5?"Práctica prioritaria":a.current>0?"Para practicar":"Poco frecuente";
+  return `<article class="insight-area"><div class="insight-area-head"><strong>${esc(a.name)}</strong><span>${label}</span></div>
+  <p>${esc(a.summary)}</p>
+  ${both?`<div class="insight-line"><span>Antes</span>${bar(a.before,"before","Antes: "+a.name)}<b>${fmt(a.before)}</b></div>`:""}
+  <div class="insight-line"><span>${both?"Ahora":"Inicial"}</span>${bar(a.current,"after","Actual: "+a.name)}<b>${fmt(a.current)}</b></div></article>`;
+ }).join("")}</div></section>`;
+ if(both){
+  const improved=area.filter(a=>a.before-a.after>.15).sort((a,b)=>(b.before-b.after)-(a.before-a.after));
+  const worse=area.filter(a=>a.after-a.before>.15).sort((a,b)=>(b.after-b.before)-(a.after-a.before));
+  h+=`<div class="two insight-assessments"><section class="panel"><span class="eyebrow">AVANCES</span><h2 class="section-title">Lo que mejoró según tus respuestas</h2>
+  ${improved.length?improved.map(a=>`<p class="insight-highlight">✓ <b>${esc(a.name)}</b><small>${fmt(a.before-a.after)} puntos menos</small></p>`).join(""):"<p>No se registraron reducciones. Revisa también los retos que has intentado: practicar puede ser valioso aunque las puntuaciones no cambien.</p>"}</section>
+  <section class="panel"><span class="eyebrow">SEGUIR TRABAJANDO</span><h2 class="section-title">Dificultades que aumentaron</h2>
+  ${worse.length?worse.map(a=>`<p class="insight-highlight">↗ <b>${esc(a.name)}</b><small>${fmt(a.after-a.before)} puntos más</small></p>`).join(""):"<p>No reportaste aumentos de dificultad entre ambas evaluaciones.</p>"}</section></div>`;
+ }
+ h+=`<section class="panel insight-section"><span class="eyebrow">TUS PRÓXIMOS PASOS</span><h2 class="section-title">Mis prioridades para practicar</h2>
+ <p class="muted">Basadas en ${last.complete?"tu evaluación final":"tu evaluación inicial"}. No son etiquetas personales: solo oportunidades para ensayar nuevas acciones.</p>
+ ${!ranked.length?'<div class="notice">Dices experimentar estas dificultades poco frecuentemente. Puedes elegir una habilidad para seguir fortaleciéndola.</div>':""}
+ <div class="insight-priorities">${suggestions.map((a,i)=>`<article class="insight-priority ${selected.id===a.id?"selected":""}">
+ <span class="pill">${ranked.length?"Prioridad "+(i+1):"Habilidad para fortalecer"}</span>
+ <h3>${esc(a.name)}</h3><p>${esc(a.action)}</p><small>${fmt(a.current)}/4 de frecuencia media</small>
+ <div class="row">${button("Practicar etapa "+(a.stage+1),"data-stage='"+a.stage+"'","secondary sm")}
+ ${button("Hacer día "+a.day,"data-day='"+a.day+"'","secondary sm")}
+ ${button(selected.id===a.id?"✓ Elegido":"Elegir enfoque","data-focus-area='"+a.id+"'","sm")}</div></article>`).join("")}</div></section>
+ <section class="panel insight-section insight-plan"><span class="eyebrow">MI PLAN PERSONAL</span><h2 class="section-title">Esta semana practicaré: ${esc(selected.name)}</h2>
+ <p>${esc(selected.tip)}</p>
+ <div class="formfield"><label for="focus-plan-goal">Mi objetivo concreto de esta semana</label>
+ <textarea id="focus-plan-goal" data-key="focus-plan" data-text="goal" placeholder="Ej.: aportaré una idea breve en la próxima reunión.">${esc(records["focus-plan"]?.answers?.goal||"")}</textarea></div>
+ <div class="checks"><label class="check"><input type="checkbox" data-key="focus-plan" data-check="p-${selected.id}" ${records["focus-plan"]?.checks?.["p-"+selected.id]?"checked":""}><span>Preparé una frase o una acción pequeña</span></label>
+ <label class="check"><input type="checkbox" data-key="focus-plan" data-check="r-${selected.id}" ${records["focus-plan"]?.checks?.["r-"+selected.id]?"checked":""}><span>Lo intenté en una situación real</span></label></div>
+ <div class="row">${button("Practicar la etapa","data-stage='"+selected.stage+"'","")}
+ ${button("Hacer el reto del día "+selected.day,"data-day='"+selected.day+"'")}</div>
+ <p class="muted">Tu plan se guarda solamente en este navegador.</p></section>`;
+ if(both)h+=`<details class="panel insight-section insight-detail"><summary><b>Comparar las 8 preguntas una por una</b><span>Ver respuestas</span></summary>
+ <div class="insight-questions">${D.questions.map((q,i)=>`<div><strong>${i+1}. ${esc(q)}</strong><span>Inicial: ${first.scores[i]}/4 · Final: ${last.scores[i]}/4</span>
+ <small>${first.scores[i]>last.scores[i]?"Dificultad menos frecuente":first.scores[i]<last.scores[i]?"Dificultad más frecuente":"Sin cambio"}</small></div>`).join("")}</div></details>`;
+ const feel=feeling(records);
+ h+=`<section class="panel insight-section"><span class="eyebrow">TUS PRÁCTICAS REALES</span><h2 class="section-title">Antes y después de cada reto</h2>
+ ${feel.n?`<div class="insight-totals"><div><strong>${fmt(feel.b)}<small>/10</small></strong><span>Incomodidad antes</span></div><span>→</span>
+ <div><strong>${fmt(feel.a)}<small>/10</small></strong><span>Incomodidad después</span></div></div>
+ <p>Hay ${feel.n} retos con ambas escalas; en ${feel.lower} la incomodidad fue menor después de practicar.</p>`:
+ "<p>Aún no registraste ambas escalas en un reto. Responde «incomodidad antes» y «después» para comparar cómo te sentiste.</p>"}
+ ${button("Volver a mis retos","data-view='reto'")}
+ <p class="muted">Estas sensaciones son subjetivas y no constituyen un diagnóstico.</p></section>
+ <p class="muted insight-disclaimer">Las ocho preguntas y sus agrupaciones son herramientas educativas de reflexión, no una evaluación psicológica validada. El cambio observado no prueba por sí solo el efecto de este curso.</p>`;
+ return h;
+}
+window.CALMA_ANALYTICS={report,render};
+})();
