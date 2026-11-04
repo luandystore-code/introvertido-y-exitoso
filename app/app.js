@@ -6,19 +6,53 @@ const main=document.getElementById("page-content");
 const pageTitle=document.getElementById("page-title");
 const saveStatus=document.getElementById("save-status");
 const modal=document.getElementById("modal");
-let secret=localStorage.getItem("calma_key")||"";
-let username=localStorage.getItem("calma_username")||"";
+const STORAGE_KEY="calma_progreso_local_v1";
+const MAX_BACKUP_BYTES=2*1024*1024;
 let records={};
 let view="inicio",day=1,stage=0,tool="networking",assessment="start";
-const timers={};
-const pending=new Set();
 function escapeHTML(s){return String(s===undefined||s===null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function value(k){if(!records[k])records[k]={answers:{},checks:{},scores:{},done:false};return records[k];}
-function localSave(){try{localStorage.setItem("calma_backup_"+secret,JSON.stringify(records));}catch(e){}}
-function localLoad(){try{records=JSON.parse(localStorage.getItem("calma_backup_"+secret)||"{}");}catch(e){records={};}}
-function request(path,opts={}){const h=Object.assign({"Authorization":"Bearer "+secret},opts.headers||{});return fetch(path,Object.assign({},opts,{headers:h,cache:"no-store"})).then(async r=>{let j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||"Error de conexión");return j;});}
-async function flush(k){if(!secret)return;try{await request("/api/entries/"+encodeURIComponent(k),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(value(k))});pending.delete(k);saveStatus.textContent=pending.size?"Guardando cambios…":"✓ Progreso guardado";}catch(e){saveStatus.textContent="Sin sincronizar · copia local disponible";}}
-function changed(k){pending.add(k);localSave();saveStatus.textContent="Guardando…";clearTimeout(timers[k]);timers[k]=setTimeout(()=>flush(k),600);}
+function localSave(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(records));saveStatus.textContent="✓ Guardado en este dispositivo";return true;}catch(e){saveStatus.textContent="⚠ No se pudo guardar. Exporta un respaldo";return false;}}
+function validateRecords(source){
+ if(!source||typeof source!=="object"||Array.isArray(source))throw Error("El respaldo no contiene registros válidos.");
+ const clean={},allowed=/^(day-([1-9]|[12][0-9]|30)|stage-[0-4]|assessment-(start|end)|tool-(network|meeting|limits|scripts))$/;
+ for(const [key,record] of Object.entries(source)){
+  if(!allowed.test(key)||!record||typeof record!=="object"||Array.isArray(record))continue;
+  const out={answers:{},checks:{},scores:{},done:record.done===true};
+  if(record.answers&&typeof record.answers==="object"&&!Array.isArray(record.answers))for(const [id,answer] of Object.entries(record.answers))if(/^[a-z0-9_-]{1,30}$/i.test(id)&&typeof answer==="string")out.answers[id]=answer.slice(0,2000);
+  if(record.checks&&typeof record.checks==="object"&&!Array.isArray(record.checks))for(const [id,checked] of Object.entries(record.checks))if(/^[a-z0-9_-]{1,30}$/i.test(id))out.checks[id]=checked===true;
+  if(record.scores&&typeof record.scores==="object"&&!Array.isArray(record.scores))for(const [id,score] of Object.entries(record.scores))if(/^[a-z0-9_-]{1,30}$/i.test(id)&&Number.isInteger(score)&&score>=0&&score<=10)out.scores[id]=score;
+  clean[key]=out;
+ }
+ return clean;
+}
+function localLoad(){
+ try{const saved=localStorage.getItem(STORAGE_KEY);records=saved?validateRecords(JSON.parse(saved)):{};}
+ catch(e){records={};saveStatus.textContent="⚠ Error al leer avances guardados";}
+}
+function changed(){localSave();}
+function applyImported(source){
+ const imported=validateRecords(source);
+ if(!Object.keys(imported).length)throw Error("No se encontraron ejercicios guardados.");
+ if(!confirm("¿Importar estos avances? Reemplazará los registros actuales de este navegador. Exporta primero un respaldo si quieres conservarlos."))return;
+ const previous=records;records=imported;
+ if(!localSave()){records=previous;throw Error("No se pudo guardar el respaldo en este navegador.");}
+ close();render();alert("Tus avances se importaron correctamente.");
+}
+function exportBackup(){
+ const blob=new Blob([JSON.stringify({app:"introvertido-seguro",version:1,storage:"local",exported:new Date().toISOString(),records},null,2)],{type:"application/json"});
+ const u=URL.createObjectURL(blob),anchor=document.createElement("a");
+ anchor.href=u;anchor.download="respaldo-mi-progreso-calma.json";anchor.click();
+ setTimeout(()=>URL.revokeObjectURL(u),5000);
+}
+function importBackup(){
+ const picker=document.createElement("input");picker.type="file";picker.accept=".json,application/json";
+ picker.addEventListener("change",async()=>{const file=picker.files&&picker.files[0];if(!file)return;
+  if(file.size>MAX_BACKUP_BYTES){alert("El respaldo supera el límite de 2 MB.");return;}
+  try{const content=JSON.parse(await file.text());if(content.app!=="introvertido-seguro"||!content.records)throw Error("Este archivo no es un respaldo C.A.L.M.A.");applyImported(content.records);}
+  catch(e){alert("No se pudo importar: "+e.message);}
+ });picker.click();
+}
 function field(k,id,label,placeholder="Escribe aquí tu respuesta…"){return `<div class="formfield"><label for="${k}-${id}">${escapeHTML(label)}</label><textarea id="${k}-${id}" data-key="${k}" data-text="${id}" placeholder="${escapeHTML(placeholder)}">${escapeHTML(value(k).answers[id]||"")}</textarea></div>`;}
 function checkbox(k,id,label){return `<label class="check"><input type="checkbox" data-key="${k}" data-check="${id}" ${value(k).checks[id]?"checked":""}><span>${escapeHTML(label)}</span></label>`;}
 function complete(k,label){return `<label class="check"><input type="checkbox" data-key="${k}" data-done="1" ${value(k).done?"checked":""}><span><b>${escapeHTML(label)}</b></span></label>`;}
@@ -33,7 +67,7 @@ function home(){
  return `<section class="hero"><span class="pill gold">TU VOZ IMPORTA</span><h2>No necesitas hablar más fuerte. Necesitas aprender a hacerte escuchar.</h2><p>Aprende, escribe tus respuestas y construye confianza con acciones pequeñas.</p>${btn("Continuar con mi entrenamiento","data-view='reto' data-day='"+next+"'","gold")}</section>
  <div class="cardgrid metrics"><div class="metric"><strong>${completed}/30</strong><small>Retos completados</small>${bar(completed,30)}</div><div class="metric"><strong>${stageCount}/5</strong><small>Etapas del método</small>${bar(stageCount,5)}</div><div class="metric"><strong>${value("assessment-start").done?"✓":"—"}</strong><small>Evaluación inicial</small><p>${btn("Responder","data-view='evaluacion' data-assessment='start'","secondary sm")}</p></div></div>
  <div class="two"><section class="panel"><span class="eyebrow">SIGUIENTE RETO</span><h2 class="section-title">Día ${next}: ${escapeHTML(DATA.days[next-1][0])}</h2><p>${escapeHTML(DATA.days[next-1][1])}</p>${btn("Ir al reto","data-view='reto' data-day='"+next+"'")}</section><section class="panel"><span class="eyebrow">TU RECORRIDO</span><h2 class="section-title">C.A.L.M.A.</h2><p>Clarifica → Acepta → Libérate → Muévete → Actúa.</p>${btn("Abrir método","data-view='metodo'","secondary")}</section></div>
- <div class="notice" style="margin-top:20px"><b>Piloto interactivo:</b> el acceso por compra de Hotmart aún no está vinculado. Conserva tu clave de recuperación en un sitio seguro.</div>`;
+ <div class="notice" style="margin-top:20px"><b>Tu espacio, sin contraseña:</b> esta herramienta se abre directamente. Las respuestas se guardan solo en este navegador, no en Hotmart ni en la nube. Descarga un respaldo desde «Mi espacio» para conservarlas. El enlace de la app es público.</div>`;
 }
 function method(){
  const s=DATA.method[stage],k="stage-"+stage;
@@ -70,8 +104,8 @@ function evaluation(){
  <div class="row">${btn("Volver a mi espacio","data-view='mi-espacio'","secondary")}${btn("Reto de 30 días","data-view='reto'")}</div></section>`;
 }
 function space(){
- return `<div class="two"><section class="panel"><h2 class="section-title">Mis evaluaciones</h2><p>Compara tus respuestas antes y después de practicar.</p>${btn("Evaluación inicial","data-view='evaluacion' data-assessment='start'","secondary")} ${btn("Evaluación final","data-view='evaluacion' data-assessment='end'","secondary")}</section><section class="panel"><h2 class="section-title">${username?"Mi cuenta":"Mi clave privada"}</h2><p>${username?"Usuario: <b>"+escapeHTML(username)+"</b>. Usa tu contraseña para ingresar desde otros dispositivos.":"Tu cuenta anterior usa una clave de recuperación."}</p>${username?btn("Cerrar sesión","data-action='logout'","secondary"):btn("Ver clave de recuperación","data-action='recovery'")}</section></div>
- <section class="panel" style="margin-top:18px"><h2 class="section-title">Datos y privacidad</h2><p>Guardamos tus registros en Cloudflare y una copia local de respaldo. No enviamos tus respuestas a píxeles publicitarios.</p><div class="row">${btn("Exportar registros","data-action='export'","secondary")} ${btn("Importar clave","data-action='import'","secondary")}</div><p class="muted">Puedes borrar todos tus registros del servidor y de este dispositivo.</p>${btn("Eliminar mi espacio y mis datos","data-action='delete'","secondary")}</section>`;
+ return `<div class="two"><section class="panel"><h2 class="section-title">Mis evaluaciones</h2><p>Compara tus respuestas antes y después de practicar.</p>${btn("Evaluación inicial","data-view='evaluacion' data-assessment='start'","secondary")} ${btn("Evaluación final","data-view='evaluacion' data-assessment='end'","secondary")}</section><section class="panel"><h2 class="section-title">Mi progreso sin contraseña</h2><p>Esta herramienta se abre directamente desde Hotmart Club. Tus respuestas permanecen <b>solo en este navegador y dispositivo</b>.</p><p class="muted">Si cambias de celular, usas otro navegador o borras los datos, tu avance no aparecerá automáticamente. Exporta un respaldo para recuperarlo después.</p></section></div>
+ <section class="panel" style="margin-top:18px"><h2 class="section-title">Respaldo y privacidad</h2><p>Tu información se guarda localmente en este dispositivo. No se suben tus respuestas a Cloudflare ni a Meta Ads desde esta versión.</p><div class="row">${btn("Descargar respaldo","data-action='export'","secondary")} ${btn("Importar respaldo","data-action='import-file'","secondary")}</div><p class="muted">El archivo contiene tus respuestas personales. Guárdalo de manera privada.</p><div class="row">${btn("Recuperar avances de cuenta anterior","data-action='legacy'","secondary sm")}</div><hr><p class="muted">Borrar tu progreso elimina solo la copia local de esta versión. No elimina automáticamente cuentas anteriores guardadas en la nube.</p>${btn("Borrar progreso de este dispositivo","data-action='delete'","secondary")}</section>`;
 }
 function render(){
  const titles={"inicio":"Tu progreso empieza aquí","metodo":"Método C.A.L.M.A.","reto":"Tu reto de 30 días","herramientas":"Herramientas prácticas","evaluacion":"Mis evaluaciones","mi-espacio":"Mi espacio"};
@@ -81,42 +115,33 @@ function render(){
 }
 function show(html){modal.classList.remove("hidden");document.getElementById("modal-body").innerHTML=html;}
 function close(){modal.classList.add("hidden");}
-function welcome(){show('<p>Elige tu nombre de usuario y tu propia contraseña para guardar tus respuestas y regresar desde cualquier dispositivo.</p><div class="notice"><b>Versión piloto:</b> aún no se validan compras de Hotmart. No compartas tu contraseña.</div><div class="stack" style="margin-top:20px">'+btn("Crear cuenta","data-action='show-register'")+btn("Ya tengo cuenta","data-action='show-login'","secondary")+btn("Tengo una clave antigua","data-action='import'","secondary sm")+'</div>');}
-function authDialog(mode){const reg=mode==="register";show('<p>'+(reg?'Crea un usuario y elige una contraseña segura de al menos 12 caracteres.':'Entra con tu usuario y contraseña.')+'</p><div class="formfield"><label for="auth-user">Nombre de usuario</label><input id="auth-user" type="text" autocapitalize="none" spellcheck="false" autocomplete="username" maxlength="32" placeholder="Ej. introvertido23"></div><div class="formfield"><label for="auth-pass">Contraseña</label><input id="auth-pass" type="password" autocomplete="'+(reg?'new-password':'current-password')+'" maxlength="128" placeholder="Mínimo 12 caracteres"></div>'+(reg?'<div class="formfield"><label for="auth-confirm">Confirma la contraseña</label><input id="auth-confirm" type="password" autocomplete="new-password" maxlength="128"></div>':'')+'<p class="muted">No guardamos tu contraseña en texto. Por ahora, si la olvidas, no hay recuperación por correo.</p><p id="dialog-error" role="alert" class="toast"></p><div class="row">'+btn(reg?'Crear cuenta':'Iniciar sesión',"data-action='"+(reg?'register':'login')+"'")+btn("Volver","data-action='welcome'","secondary")+'</div>');}
-function recover(){if(username){show('<p>Tu usuario es <b>'+escapeHTML(username)+'</b>. Inicia sesión desde cualquier dispositivo con tu contraseña.</p><p class="notice">La recuperación por correo aún no está disponible.</p>'+btn("Cerrar","data-action='close'"));return;}show('<p>Clave de recuperación de la versión anterior. Cualquiera que tenga esta clave puede acceder a tus ejercicios.</p><div class="code">'+escapeHTML(secret)+'</div>'+btn("Copiar clave","data-action='copy'")+btn("Cerrar","data-action='close'","secondary"));}
-function importDialog(){show('<p>Solo para cuentas de la versión anterior: pega tu clave de recuperación.</p><div class="formfield"><label for="secret-input">Clave anterior</label><input id="secret-input" type="password" autocomplete="off"></div><p id="dialog-error"></p>'+btn("Recuperar","data-action='connect'")+btn("Volver","data-action='welcome'","secondary"));}
-function normalizeUsername(u){return u.trim().toLowerCase();}
-function validateUsername(u){if(!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(u))throw Error("Usuario: 3–32 caracteres, letras sin tildes, números, guion, punto o guion bajo.");}
-function validatePassword(p){if(p.length<12||p.length>128)throw Error("La contraseña debe tener entre 12 y 128 caracteres.");}
+function legacyDialog(){
+ const user=localStorage.getItem("calma_username")||"";
+ show(`<p>Si usaste la versión antigua con cuenta, puedes traer sus respuestas aquí. No borramos tu cuenta anterior.</p><div class="formfield"><label for="legacy-user">Nombre de usuario anterior</label><input id="legacy-user" value="${escapeHTML(user)}" type="text" autocomplete="username" maxlength="32" placeholder="Solo si tenías usuario"></div><div class="formfield"><label for="legacy-pass">Contraseña anterior</label><input id="legacy-pass" type="password" autocomplete="current-password" maxlength="128" placeholder="Solo si tenías contraseña"></div><div class="formfield"><label for="legacy-key">Clave de recuperación antigua (alternativa)</label><input id="legacy-key" type="password" autocomplete="off" placeholder="Solo si tenías una clave"></div><p class="muted">Si usas este mismo navegador, primero intentaremos recuperar el acceso que ya estaba guardado. Si no se puede, completa los campos.</p><p id="dialog-error" role="alert" class="toast"></p><div class="row">${btn("Recuperar mis avances","data-action='legacy-load'")}${btn("Cancelar","data-action='close'","secondary")}</div>`);
+}
 function b64(bytes){let s="";for(const v of bytes)s+=String.fromCharCode(v);return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");}
-async function userHash(u){return b64(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode("calma-user-v2:"+u))));}
 async function deriveKey(u,password){const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(password),"PBKDF2",false,["deriveBits"]);const bits=await crypto.subtle.deriveBits({name:"PBKDF2",salt:new TextEncoder().encode("introvertido-seguro-v2:"+u),iterations:310000,hash:"SHA-256"},key,256);return b64(new Uint8Array(bits));}
-async function personalLogin(register){
- const u=normalizeUsername(document.getElementById("auth-user").value),p=document.getElementById("auth-pass").value;
- validateUsername(u);validatePassword(p);
- if(register&&p!==document.getElementById("auth-confirm").value)throw Error("Las contraseñas no coinciden.");
- const previous=secret;secret=await deriveKey(u,p);
- try{
- const handle_hash=await userHash(u);
- await request(register?"/api/account/register":"/api/account/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({handle_hash})});
- const data=await request("/api/entries");
- username=u;records=Object.assign({},data.entries||{});
- localStorage.setItem("calma_key",secret);localStorage.setItem("calma_username",username);
- localSave();close();render();saveStatus.textContent="✓ Sincronizado";
- }catch(err){secret=previous;throw err;}
+async function legacyFetch(token){
+ if(!/^[A-Za-z0-9_-]{40,120}$/.test(token))throw Error("La clave anterior no es válida.");
+ const response=await fetch("/api/entries",{headers:{Authorization:"Bearer "+token},cache:"no-store"});
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok)throw Error(result.error||"No se pudo recuperar la cuenta anterior.");
+ return result.entries||{};
 }
-async function connect(k,isNew){
- secret=k.trim();if(!/^[A-Za-z0-9_-]{40,120}$/.test(secret))throw Error("Clave incorrecta");
- if(isNew)await request("/api/register",{method:"POST"});
- const response=await request("/api/entries");
- localStorage.setItem("calma_key",secret);localStorage.removeItem("calma_username");username="";records={};localLoad();Object.assign(records,response.entries||{});localSave();saveStatus.textContent="✓ Sincronizado";close();render();
+async function restoreLegacy(){
+ const givenKey=document.getElementById("legacy-key").value.trim();
+ const user=document.getElementById("legacy-user").value.trim().toLowerCase(),pass=document.getElementById("legacy-pass").value;
+ const previous=localStorage.getItem("calma_key")||"";
+ let token=givenKey;
+ if(!token&&user&&pass)token=await deriveKey(user,pass);
+ if(!token)token=previous;
+ if(!token)throw Error("Escribe tu usuario y contraseña anteriores, o la clave antigua.");
+ let entries;
+ try{entries=await legacyFetch(token);}
+ catch(e){if(!givenKey&&!pass&&previous===token){const raw=localStorage.getItem("calma_backup_"+token);if(raw)entries=JSON.parse(raw);else throw e;}else throw e;}
+ applyImported(entries);
 }
-async function boot(){
- if(!secret){saveStatus.textContent="Sin espacio";welcome();return;}
- localLoad();render();saveStatus.textContent="Sincronizando…";
- try{const result=await request("/api/entries");Object.assign(records,result.entries||{});localSave();saveStatus.textContent="✓ Sincronizado";}
- catch(e){saveStatus.textContent="Copia local · sin conexión";}render();
-}
+function boot(){localLoad();render();if(saveStatus.textContent.indexOf("⚠")<0)saveStatus.textContent="✓ Progreso en este dispositivo";}
 document.addEventListener("click",async ev=>{
  const b=ev.target.closest("button");if(!b)return;
  if(b.id==="menu"){document.querySelector(".side").classList.toggle("expanded");return;}
@@ -124,24 +149,27 @@ document.addEventListener("click",async ev=>{
  if(b.dataset.stage!==undefined){view="metodo";stage=Number(b.dataset.stage);render();scrollTo(0,0);return;}
  if(b.dataset.day){view="reto";day=Number(b.dataset.day);render();scrollTo(0,0);return;}
  if(b.dataset.tool){tool=b.dataset.tool;render();return;}
- const a=b.dataset.action;if(!a)return;
- if(a==="close")close();
- if(a==="welcome")welcome();
- if(a==="show-register")authDialog("register");
- if(a==="show-login")authDialog("login");
- if(a==="register"||a==="login"){b.disabled=true;b.textContent="Verificando…";try{await personalLogin(a==="register");}catch(err){b.disabled=false;b.textContent=a==="register"?"Crear cuenta":"Iniciar sesión";document.getElementById("dialog-error").textContent=err.message;}}
- if(a==="logout"){if(pending.size){alert("Hay cambios pendientes de guardar. Reintenta después de sincronizar.");return;}localStorage.removeItem("calma_key");localStorage.removeItem("calma_username");localStorage.removeItem("calma_backup_"+secret);secret="";username="";records={};welcome();saveStatus.textContent="Sin sesión";}
- if(a==="recovery")recover();
- if(a==="import")importDialog();
- if(a==="copy"){try{await navigator.clipboard.writeText(secret);b.textContent="✓ Clave copiada";}catch(e){alert("Copia manualmente la clave.");}}
- if(a==="create")authDialog("register");
- if(a==="connect"){b.disabled=true;try{await connect(document.getElementById("secret-input").value,false);}catch(e){b.disabled=false;document.getElementById("dialog-error").textContent=e.message;}}
- if(a==="export"){const blob=new Blob([JSON.stringify({app:"introvertido-seguro",exported:new Date().toISOString(),records},null,2)],{type:"application/json"});const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="mi-progreso-calma.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),5000);}
- if(a==="delete"){if(!confirm("¿Eliminar definitivamente tus respuestas?"))return;if(!confirm("No se puede deshacer. ¿Confirmas?"))return;try{await request("/api/profile",{method:"DELETE"});localStorage.removeItem("calma_backup_"+secret);localStorage.removeItem("calma_key");localStorage.removeItem("calma_username");records={};secret="";username="";welcome();saveStatus.textContent="Sin espacio";}catch(e){alert(e.message);}}
+ const action=b.dataset.action;if(!action)return;
+ if(action==="close")close();
+ if(action==="export")exportBackup();
+ if(action==="import-file")importBackup();
+ if(action==="legacy")legacyDialog();
+ if(action==="legacy-load"){
+  b.disabled=true;b.textContent="Recuperando…";
+  try{await restoreLegacy();}
+  catch(e){const el=document.getElementById("dialog-error");if(el)el.textContent=e.message;}
+  finally{b.disabled=false;b.textContent="Recuperar mis avances";}
+ }
+ if(action==="delete"){
+  if(!confirm("¿Eliminar tus ejercicios y respuestas de este navegador? Haz antes un respaldo si deseas conservarlos."))return;
+  if(!confirm("Esta acción no se puede deshacer en este dispositivo sin un respaldo. ¿Confirmas?"))return;
+  try{localStorage.removeItem(STORAGE_KEY);records={};saveStatus.textContent="Progreso local eliminado";render();}
+  catch(e){alert("No se pudo eliminar el progreso de este navegador.");}
+ }
 });
 document.addEventListener("input",ev=>{const t=ev.target;if(t.dataset.key&&t.dataset.text!==undefined){value(t.dataset.key).answers[t.dataset.text]=t.value;changed(t.dataset.key);}});
 document.addEventListener("change",ev=>{const t=ev.target,k=t.dataset.key;if(!k)return;if(t.dataset.check!==undefined)value(k).checks[t.dataset.check]=t.checked;else if(t.dataset.score!==undefined)value(k).scores[t.dataset.score]=Number(t.value);else if(t.dataset.done!==undefined)value(k).done=t.checked;else return;changed(k);if(t.dataset.done!==undefined)render();});
-window.addEventListener("online",()=>{for(const k of pending)flush(k);});
+window.addEventListener("storage",ev=>{if(ev.key===STORAGE_KEY){localLoad();render();}});
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
 boot();
 })();
