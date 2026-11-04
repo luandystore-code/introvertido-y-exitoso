@@ -12,3 +12,12 @@ CREATE TABLE IF NOT EXISTS entries (
   FOREIGN KEY(token_hash) REFERENCES profiles(token_hash) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_entries_token ON entries(token_hash);
+
+-- Identificadores públicos elegidos por el usuario (se almacena solo hash SHA-256)
+CREATE TABLE IF NOT EXISTS user_handles (
+  handle_hash TEXT PRIMARY KEY,
+  token_hash TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(token_hash) REFERENCES profiles(token_hash) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_handles_token ON user_handles(token_hash);
