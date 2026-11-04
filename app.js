@@ -49,7 +49,9 @@
   fbq('track', 'ViewContent', {
     content_name: 'Introvertido y Seguro | Método C.A.L.M.A. de 30 Días',
     content_type: 'product',
-    content_ids: ['8875939']
+    content_ids: ['8875939'],
+    value: 9.99,
+    currency: 'USD'
   });
 
 
