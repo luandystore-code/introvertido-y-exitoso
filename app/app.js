@@ -102,7 +102,7 @@ function evaluation(){
  return `<section class="panel"><span class="eyebrow">${assessment==="start"?"PUNTO DE PARTIDA":"EVALUACIÓN FINAL"}</span>
  <h2 class="section-title">Ocho preguntas para medir tus avances</h2>
  <p>Indica con qué frecuencia te ocurre cada dificultad: 0 (nunca) a 4 (casi siempre). Una puntuación menor significa que te ocurre con menos frecuencia. Esta herramienta es educativa, no una prueba clínica.</p>
- <div class="notice"><b>${r.answered} de 8 preguntas respondidas.</b> Contesta todas para guardar la evaluación y ver tu análisis personal.</div>
+ <div class="notice"><b id="assessment-count" aria-live="polite">${r.answered} de 8 preguntas respondidas.</b> Contesta todas para guardar la evaluación y ver tu análisis personal.</div>
  ${DATA.questions.map((x,i)=>`<div class="formfield" style="padding:12px 0;border-bottom:1px solid #e4e8df"><label>${i+1}. ${escapeHTML(x)}</label>${scale(k,"q"+i,4)}</div>`).join("")}
  ${field(k,"goal",assessment==="start"?"¿Qué conducta quiero mejorar?":"¿Qué conducta concreta logré mejorar?")}
  <div class="row">${btn(r.complete?"Actualizar evaluación y ver análisis":"Guardar evaluación y ver análisis","data-action='finish-assessment'")}
@@ -270,7 +270,7 @@ document.addEventListener("click",async ev=>{
  }
 });
 document.addEventListener("input",ev=>{const t=ev.target;if(t.dataset.key&&t.dataset.text!==undefined){value(t.dataset.key).answers[t.dataset.text]=t.value;changed(t.dataset.key);}});
-document.addEventListener("change",ev=>{const t=ev.target,k=t.dataset.key;if(!k)return;if(t.dataset.check!==undefined)value(k).checks[t.dataset.check]=t.checked;else if(t.dataset.score!==undefined)value(k).scores[t.dataset.score]=Number(t.value);else if(t.dataset.done!==undefined)value(k).done=t.checked;else return;changed(k);if(t.dataset.done!==undefined)render();});
+document.addEventListener("change",ev=>{const t=ev.target,k=t.dataset.key;if(!k)return;if(t.dataset.check!==undefined)value(k).checks[t.dataset.check]=t.checked;else if(t.dataset.score!==undefined){value(k).scores[t.dataset.score]=Number(t.value);if(k==="assessment-start"||k==="assessment-end"){const el=document.getElementById("assessment-count");if(el)el.textContent=window.CALMA_ANALYTICS.report(records,k.slice(11)).answered+" de 8 preguntas respondidas.";}}else if(t.dataset.done!==undefined)value(k).done=t.checked;else return;changed(k);if(t.dataset.done!==undefined)render();});
 window.addEventListener("storage",ev=>{if(ev.key===STORAGE_KEY){localLoad();render();}});
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
 boot();
