@@ -1,6 +1,6 @@
 /**
  * META PIXEL + TRACKING PROPIO SIN UTMIFY
- * Producto: Introvertido y Exitoso
+ * Producto: Introvertido y Seguro | Método C.A.L.M.A. de 30 Días
  * Pixel: 3945503179000292
  */
 (function () {
@@ -44,11 +44,12 @@
 
   fbq('track', 'PageView');
 
+  // El precio y checkout de la nueva edición se confirmarán antes de lanzar campañas.
+  // No atribuir un importe incorrecto a este ViewContent.
   fbq('track', 'ViewContent', {
-    content_name: 'Introvertido y Exitoso',
+    content_name: 'Introvertido y Seguro | Método C.A.L.M.A. de 30 Días',
     content_type: 'product',
-    value: 9.00,
-    currency: 'USD'
+    content_ids: ['8875939']
   });
 
 
