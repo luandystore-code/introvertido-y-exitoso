@@ -302,3 +302,15 @@ body{background:var(--bg);}
   html{scroll-behavior:auto}
   .btn{transition:none}
 }
+
+/* Precio confirmado e integración de checkout Hotmart */
+.price-card .price{font-size:clamp(3.4rem,5vw,4.7rem);display:flex;justify-content:center;align-items:baseline;gap:6px;letter-spacing:-.055em;margin:22px 0 8px;line-height:1}
+.price-card .price-currency{font-size:.36em;letter-spacing:0;font-weight:800}
+.price-card .offer-payment{font-weight:800;color:var(--brand-dark);margin:0}
+.modules-cta{margin-top:26px}
+.modules-cta .btn{max-width:100%;min-width:min(100%,355px)}
+.modules-cta p{font-size:.85rem;margin:12px 0 0}
+@media(max-width:620px){
+ .price-card .price{font-size:clamp(3.25rem,14vw,4.3rem)}
+ .modules-cta .btn{min-width:0;width:100%}
+}
