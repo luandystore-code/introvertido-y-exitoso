@@ -32,3 +32,49 @@
 .advance-stage b,.advance-activity b{display:block;font-size:14px}.advance-stage small,.advance-activity small{display:block;color:var(--mute);font-size:12px}
 .advance-two{margin:18px 0}
 @media(max-width:740px){.advance-hero{grid-template-columns:1fr}.advance-percent{justify-self:start;min-width:130px;text-align:left}.advance-week summary{flex-wrap:wrap}.advance-days{padding:4px 11px}.advance-day{gap:8px}.advance-day-number{flex-basis:31px;height:31px;font-size:11px}.advance-day-body strong{font-size:12px}.advance-day .btn,.advance-stage .btn,.advance-activity .btn{font-size:12px;padding:7px 10px;min-height:35px}}
+
+/* Comparaciones, autoconocimiento y plan de acción */
+.insight-hero{margin-bottom:20px}
+.insight-assessments{margin:17px 0}.insight-assessments .panel{display:flex;flex-direction:column;align-items:start;gap:8px}
+.insight-assessments .section-title{margin:3px 0}.insight-assessments .btn{margin-top:auto}
+.insight-section{margin:18px 0}.insight-section .section-title{margin-bottom:12px}
+.insight-totals{display:flex;align-items:center;flex-wrap:wrap;gap:20px;margin:18px 0}
+.insight-totals>div{display:grid;justify-items:start;min-width:100px;gap:1px}
+.insight-totals strong{font-size:clamp(32px,4vw,43px);font-weight:800;color:var(--pine);line-height:1.12}
+.insight-totals strong small{font-size:16px;color:var(--mute)}
+.insight-totals>div>span{font-size:13px;color:var(--mute)}
+.insight-totals>span{font-size:22px;color:var(--gold)}
+.insight-totals p{padding:10px 15px;background:#eef6ee;border-radius:12px;font-weight:800;color:var(--pine)}
+.insight-areas{display:grid;gap:13px;margin-top:18px}
+.insight-area{border:1px solid var(--line);background:#fcfdfb;border-radius:15px;padding:18px;min-width:0}
+.insight-area-head{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:start}
+.insight-area-head strong{font-size:16px;color:var(--pine)}
+.insight-area-head>span{font-size:12px;font-weight:800;color:#6c693d;background:#f6efda;padding:4px 9px;border-radius:20px}
+.insight-area p{margin:8px 0 12px;color:var(--mute);font-size:13px}
+.insight-line{display:grid;grid-template-columns:47px minmax(0,1fr) 36px;gap:9px;align-items:center;margin:7px 0;font-size:12px}
+.insight-line>b{font-size:13px;color:var(--pine);font-variant-numeric:tabular-nums}
+.insight-track{width:100%;height:11px;border-radius:20px;background:#e8eee9;overflow:hidden}
+.insight-track>span{display:block;height:100%;border-radius:20px}
+.insight-track>.before{background:#a7b7b0}.insight-track>.after{background:linear-gradient(90deg,#977739,#d2b06c)}
+.insight-highlight{display:grid;gap:2px;padding:10px 0;border-bottom:1px solid var(--line);margin:0}
+.insight-highlight:last-child{border:0}.insight-highlight small{display:block;color:var(--mute);padding-left:19px}
+.insight-priorities{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:18px 0}
+.insight-priority{min-width:0;border:1px solid var(--line);border-radius:17px;background:#fdfdfc;padding:17px;display:flex;flex-direction:column;align-items:start;gap:10px}
+.insight-priority.selected{background:#f3f8f2;border-color:#a7c9b5}
+.insight-priority h3{font:700 22px Georgia,serif;color:var(--pine);margin:0}
+.insight-priority p{font-size:14px;color:#465a50;margin:0}
+.insight-priority small{font-size:12px;color:var(--mute)}
+.insight-priority .row{margin-top:auto;padding-top:7px;gap:7px}.insight-priority .btn{font-size:12px;padding:8px 10px}
+.insight-plan{border-color:#d3c59e;background:linear-gradient(145deg,#fffefb,#fbf6e9)}
+.insight-plan .checks{margin:14px 0}.insight-plan .row{margin-top:12px}
+.insight-detail summary{cursor:pointer;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+.insight-detail summary span{font-size:12px;color:var(--mute)}
+.insight-questions{display:grid;gap:9px;margin-top:17px}
+.insight-questions>div{border-top:1px solid var(--line);display:grid;gap:4px;padding:12px 0}
+.insight-questions strong{font-size:14px}.insight-questions span,.insight-questions small{font-size:12px;color:var(--mute)}
+.insight-disclaimer{font-size:12px;padding:8px 3px}
+@media(max-width:1040px){.insight-priorities{grid-template-columns:1fr 1fr}}
+@media(max-width:740px){.insight-priorities{grid-template-columns:1fr}.insight-totals{gap:12px}.insight-totals>div{min-width:80px}
+.insight-hero .advance-percent{justify-self:start}
+.insight-area{padding:13px}.insight-priority{padding:15px}.insight-totals p{flex-basis:100%;margin:0}
+}
