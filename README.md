@@ -50,6 +50,20 @@ No se publica aquí el enlace público de la app para evitar distribuir el bono 
 - app/: aplicación complementaria independiente.
 - docs/AUDIT.md: auditorías históricas, pueden referirse a la edición anterior.
 
+## Experiencia móvil (noviembre 2026)
+
+- Encabezado compacto en pantallas pequeñas; el CTA principal aparece primero en el hero.
+- Mensaje principal breve y botón de compra visible antes del mockup decorativo.
+- Diseño de portada reducido para evitar una primera pantalla dominada por imágenes.
+- Tarjetas de beneficios y pasos convertidas a filas compactas para facilitar lectura y scroll.
+- Fuente, espacios, tarjetas, FAQ y botones de compra ajustados para dispositivos angostos, incluso ~320 px.
+- Barra fija de compra con precio US$9.99, visible al pasar el CTA inicial; respeta zonas seguras del teléfono.
+- Todos los siete CTA conservan el mismo enlace Hotmart y el tracking UTM/fbclid.
+- No se introducen nuevos testimonios ni garantías no verificadas.
+- Comprobación estática: sintaxis JS, CSS balanceado, 7 enlaces de compra correctos, navegación interna y pixel.
+
+**Pendiente antes de pauta:** prueba visual manual en teléfono real, clic al checkout desde Meta Ads y comprobación de flujo de compra y acceso al Hotmart Club.
+
 ## Tracking
 
 El código de la landing mantiene el Meta Pixel anteriormente instalado, los eventos PageView y ViewContent, primera/última atribución y persistencia de UTMs/click IDs en localStorage. Los siete enlaces al checkout pay.hotmart.com/F108322703A usan el decorador de app.js para agregar los parámetros de atribución automáticamente.
