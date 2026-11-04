@@ -7,6 +7,7 @@ const pageTitle=document.getElementById("page-title");
 const saveStatus=document.getElementById("save-status");
 const modal=document.getElementById("modal");
 let secret=localStorage.getItem("calma_key")||"";
+let username=localStorage.getItem("calma_username")||"";
 let records={};
 let view="inicio",day=1,stage=0,tool="networking",assessment="start";
 const timers={};
@@ -69,7 +70,7 @@ function evaluation(){
  <div class="row">${btn("Volver a mi espacio","data-view='mi-espacio'","secondary")}${btn("Reto de 30 días","data-view='reto'")}</div></section>`;
 }
 function space(){
- return `<div class="two"><section class="panel"><h2 class="section-title">Mis evaluaciones</h2><p>Compara tus respuestas antes y después de practicar.</p>${btn("Evaluación inicial","data-view='evaluacion' data-assessment='start'","secondary")} ${btn("Evaluación final","data-view='evaluacion' data-assessment='end'","secondary")}</section><section class="panel"><h2 class="section-title">Mi clave privada</h2><p>Guárdala para recuperar tus respuestas en otro dispositivo.</p>${btn("Ver clave de recuperación","data-action='recovery'")}</section></div>
+ return `<div class="two"><section class="panel"><h2 class="section-title">Mis evaluaciones</h2><p>Compara tus respuestas antes y después de practicar.</p>${btn("Evaluación inicial","data-view='evaluacion' data-assessment='start'","secondary")} ${btn("Evaluación final","data-view='evaluacion' data-assessment='end'","secondary")}</section><section class="panel"><h2 class="section-title">${username?"Mi cuenta":"Mi clave privada"}</h2><p>${username?"Usuario: <b>"+escapeHTML(username)+"</b>. Usa tu contraseña para ingresar desde otros dispositivos.":"Tu cuenta anterior usa una clave de recuperación."}</p>${username?btn("Cerrar sesión","data-action='logout'","secondary"):btn("Ver clave de recuperación","data-action='recovery'")}</section></div>
  <section class="panel" style="margin-top:18px"><h2 class="section-title">Datos y privacidad</h2><p>Guardamos tus registros en Cloudflare y una copia local de respaldo. No enviamos tus respuestas a píxeles publicitarios.</p><div class="row">${btn("Exportar registros","data-action='export'","secondary")} ${btn("Importar clave","data-action='import'","secondary")}</div><p class="muted">Puedes borrar todos tus registros del servidor y de este dispositivo.</p>${btn("Eliminar mi espacio y mis datos","data-action='delete'","secondary")}</section>`;
 }
 function render(){
@@ -80,15 +81,35 @@ function render(){
 }
 function show(html){modal.classList.remove("hidden");document.getElementById("modal-body").innerHTML=html;}
 function close(){modal.classList.add("hidden");}
-function welcome(){show(`<p>Guarda tus respuestas, checklists y retos en un espacio privado. Para recuperarlo en otro dispositivo necesitarás tu clave secreta.</p><div class="notice"><b>Versión piloto:</b> la compra en Hotmart aún no controla el acceso.</div><div class="stack" style="margin-top:20px">${btn("Crear mi espacio","data-action='create'")}${btn("Ya tengo una clave","data-action='import'","secondary")}</div>`);}
-function recover(){show(`<p>Guarda esta clave en un lugar seguro. Quien la tenga podrá acceder a tus ejercicios.</p><div class="code">${escapeHTML(secret)}</div><p class="muted">Si pierdes la clave y el acceso a tu dispositivo, tus registros no podrán recuperarse.</p>${btn("Copiar clave","data-action='copy'")} ${btn("Cerrar","data-action='close'","secondary")}`);}
-function importDialog(){show(`<p>Pega tu clave para recuperar tus registros desde Cloudflare.</p><div class="formfield"><label for="secret-input">Clave de recuperación</label><input id="secret-input" type="password" autocomplete="off" placeholder="Pega tu clave aquí"></div><p id="dialog-error"></p>${btn("Recuperar","data-action='connect'")} ${btn("Cancelar","data-action='close'","secondary")}`);}
-function newSecret(){const x=crypto.getRandomValues(new Uint8Array(32));return btoa(String.fromCharCode(...x)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");}
+function welcome(){show('<p>Elige tu nombre de usuario y tu propia contraseña para guardar tus respuestas y regresar desde cualquier dispositivo.</p><div class="notice"><b>Versión piloto:</b> aún no se validan compras de Hotmart. No compartas tu contraseña.</div><div class="stack" style="margin-top:20px">'+btn("Crear cuenta","data-action='show-register'")+btn("Ya tengo cuenta","data-action='show-login'","secondary")+btn("Tengo una clave antigua","data-action='import'","secondary sm")+'</div>');}
+function authDialog(mode){const reg=mode==="register";show('<p>'+(reg?'Crea un usuario y elige una contraseña segura de al menos 12 caracteres.':'Entra con tu usuario y contraseña.')+'</p><div class="formfield"><label for="auth-user">Nombre de usuario</label><input id="auth-user" type="text" autocapitalize="none" spellcheck="false" autocomplete="username" maxlength="32" placeholder="Ej. introvertido23"></div><div class="formfield"><label for="auth-pass">Contraseña</label><input id="auth-pass" type="password" autocomplete="'+(reg?'new-password':'current-password')+'" maxlength="128" placeholder="Mínimo 12 caracteres"></div>'+(reg?'<div class="formfield"><label for="auth-confirm">Confirma la contraseña</label><input id="auth-confirm" type="password" autocomplete="new-password" maxlength="128"></div>':'')+'<p class="muted">No guardamos tu contraseña en texto. Por ahora, si la olvidas, no hay recuperación por correo.</p><p id="dialog-error" role="alert" class="toast"></p><div class="row">'+btn(reg?'Crear cuenta':'Iniciar sesión',"data-action='"+(reg?'register':'login')+"'")+btn("Volver","data-action='welcome'","secondary")+'</div>');}
+function recover(){if(username){show('<p>Tu usuario es <b>'+escapeHTML(username)+'</b>. Inicia sesión desde cualquier dispositivo con tu contraseña.</p><p class="notice">La recuperación por correo aún no está disponible.</p>'+btn("Cerrar","data-action='close'"));return;}show('<p>Clave de recuperación de la versión anterior. Cualquiera que tenga esta clave puede acceder a tus ejercicios.</p><div class="code">'+escapeHTML(secret)+'</div>'+btn("Copiar clave","data-action='copy'")+btn("Cerrar","data-action='close'","secondary"));}
+function importDialog(){show('<p>Solo para cuentas de la versión anterior: pega tu clave de recuperación.</p><div class="formfield"><label for="secret-input">Clave anterior</label><input id="secret-input" type="password" autocomplete="off"></div><p id="dialog-error"></p>'+btn("Recuperar","data-action='connect'")+btn("Volver","data-action='welcome'","secondary"));}
+function normalizeUsername(u){return u.trim().toLowerCase();}
+function validateUsername(u){if(!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(u))throw Error("Usuario: 3–32 caracteres, letras sin tildes, números, guion, punto o guion bajo.");}
+function validatePassword(p){if(p.length<12||p.length>128)throw Error("La contraseña debe tener entre 12 y 128 caracteres.");}
+function b64(bytes){let s="";for(const v of bytes)s+=String.fromCharCode(v);return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");}
+async function userHash(u){return b64(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode("calma-user-v2:"+u))));}
+async function deriveKey(u,password){const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(password),"PBKDF2",false,["deriveBits"]);const bits=await crypto.subtle.deriveBits({name:"PBKDF2",salt:new TextEncoder().encode("introvertido-seguro-v2:"+u),iterations:310000,hash:"SHA-256"},key,256);return b64(new Uint8Array(bits));}
+async function personalLogin(register){
+ const u=normalizeUsername(document.getElementById("auth-user").value),p=document.getElementById("auth-pass").value;
+ validateUsername(u);validatePassword(p);
+ if(register&&p!==document.getElementById("auth-confirm").value)throw Error("Las contraseñas no coinciden.");
+ const previous=secret;secret=await deriveKey(u,p);
+ try{
+ const handle_hash=await userHash(u);
+ await request(register?"/api/account/register":"/api/account/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({handle_hash})});
+ const data=await request("/api/entries");
+ username=u;records=Object.assign({},data.entries||{});
+ localStorage.setItem("calma_key",secret);localStorage.setItem("calma_username",username);
+ localSave();close();render();saveStatus.textContent="✓ Sincronizado";
+ }catch(err){secret=previous;throw err;}
+}
 async function connect(k,isNew){
  secret=k.trim();if(!/^[A-Za-z0-9_-]{40,120}$/.test(secret))throw Error("Clave incorrecta");
  if(isNew)await request("/api/register",{method:"POST"});
  const response=await request("/api/entries");
- localStorage.setItem("calma_key",secret);localLoad();Object.assign(records,response.entries||{});localSave();saveStatus.textContent="✓ Sincronizado";close();render();
+ localStorage.setItem("calma_key",secret);localStorage.removeItem("calma_username");username="";records={};localLoad();Object.assign(records,response.entries||{});localSave();saveStatus.textContent="✓ Sincronizado";close();render();
 }
 async function boot(){
  if(!secret){saveStatus.textContent="Sin espacio";welcome();return;}
@@ -105,13 +126,18 @@ document.addEventListener("click",async ev=>{
  if(b.dataset.tool){tool=b.dataset.tool;render();return;}
  const a=b.dataset.action;if(!a)return;
  if(a==="close")close();
+ if(a==="welcome")welcome();
+ if(a==="show-register")authDialog("register");
+ if(a==="show-login")authDialog("login");
+ if(a==="register"||a==="login"){b.disabled=true;b.textContent="Verificando…";try{await personalLogin(a==="register");}catch(err){b.disabled=false;b.textContent=a==="register"?"Crear cuenta":"Iniciar sesión";document.getElementById("dialog-error").textContent=err.message;}}
+ if(a==="logout"){if(pending.size){alert("Hay cambios pendientes de guardar. Reintenta después de sincronizar.");return;}localStorage.removeItem("calma_key");localStorage.removeItem("calma_username");localStorage.removeItem("calma_backup_"+secret);secret="";username="";records={};welcome();saveStatus.textContent="Sin sesión";}
  if(a==="recovery")recover();
  if(a==="import")importDialog();
  if(a==="copy"){try{await navigator.clipboard.writeText(secret);b.textContent="✓ Clave copiada";}catch(e){alert("Copia manualmente la clave.");}}
- if(a==="create"){b.disabled=true;try{await connect(newSecret(),true);recover();}catch(e){b.disabled=false;alert("No se pudo crear: "+e.message);}}
+ if(a==="create")authDialog("register");
  if(a==="connect"){b.disabled=true;try{await connect(document.getElementById("secret-input").value,false);}catch(e){b.disabled=false;document.getElementById("dialog-error").textContent=e.message;}}
  if(a==="export"){const blob=new Blob([JSON.stringify({app:"introvertido-seguro",exported:new Date().toISOString(),records},null,2)],{type:"application/json"});const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="mi-progreso-calma.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),5000);}
- if(a==="delete"){if(!confirm("¿Eliminar definitivamente tus respuestas?"))return;if(!confirm("No se puede deshacer. ¿Confirmas?"))return;try{await request("/api/profile",{method:"DELETE"});localStorage.removeItem("calma_backup_"+secret);localStorage.removeItem("calma_key");records={};secret="";welcome();saveStatus.textContent="Sin espacio";}catch(e){alert(e.message);}}
+ if(a==="delete"){if(!confirm("¿Eliminar definitivamente tus respuestas?"))return;if(!confirm("No se puede deshacer. ¿Confirmas?"))return;try{await request("/api/profile",{method:"DELETE"});localStorage.removeItem("calma_backup_"+secret);localStorage.removeItem("calma_key");localStorage.removeItem("calma_username");records={};secret="";username="";welcome();saveStatus.textContent="Sin espacio";}catch(e){alert(e.message);}}
 });
 document.addEventListener("input",ev=>{const t=ev.target;if(t.dataset.key&&t.dataset.text!==undefined){value(t.dataset.key).answers[t.dataset.text]=t.value;changed(t.dataset.key);}});
 document.addEventListener("change",ev=>{const t=ev.target,k=t.dataset.key;if(!k)return;if(t.dataset.check!==undefined)value(k).checks[t.dataset.check]=t.checked;else if(t.dataset.score!==undefined)value(k).scores[t.dataset.score]=Number(t.value);else if(t.dataset.done!==undefined)value(k).done=t.checked;else return;changed(k);if(t.dataset.done!==undefined)render();});
