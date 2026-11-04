@@ -156,7 +156,7 @@ function render(records){
  <section class="panel insight-section insight-plan"><span class="eyebrow">MI PLAN PERSONAL</span><h2 class="section-title">Esta semana practicaré: ${esc(selected.name)}</h2>
  <p>${esc(selected.tip)}</p>
  <div class="formfield"><label for="focus-plan-goal">Mi objetivo concreto de esta semana</label>
- <textarea id="focus-plan-goal" data-key="focus-plan" data-text="goal" placeholder="Ej.: aportaré una idea breve en la próxima reunión.">${esc(records["focus-plan"]?.answers?.goal||"")}</textarea></div>
+ <textarea id="focus-plan-goal" data-key="focus-plan" data-text="goal-${selected.id}" placeholder="Ej.: aportaré una idea breve en la próxima reunión.">${esc(records["focus-plan"]?.answers?.["goal-"+selected.id]||"")}</textarea></div>
  <div class="checks"><label class="check"><input type="checkbox" data-key="focus-plan" data-check="p-${selected.id}" ${records["focus-plan"]?.checks?.["p-"+selected.id]?"checked":""}><span>Preparé una frase o una acción pequeña</span></label>
  <label class="check"><input type="checkbox" data-key="focus-plan" data-check="r-${selected.id}" ${records["focus-plan"]?.checks?.["r-"+selected.id]?"checked":""}><span>Lo intenté en una situación real</span></label></div>
  <div class="row">${button("Practicar la etapa","data-stage='"+selected.stage+"'","")}
