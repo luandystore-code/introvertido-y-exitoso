@@ -15,7 +15,7 @@ function value(k){if(!records[k])records[k]={answers:{},checks:{},scores:{},done
 function localSave(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(records));saveStatus.textContent="✓ Guardado en este dispositivo";return true;}catch(e){saveStatus.textContent="⚠ No se pudo guardar. Exporta un respaldo";return false;}}
 function validateRecords(source){
  if(!source||typeof source!=="object"||Array.isArray(source))throw Error("El respaldo no contiene registros válidos.");
- const clean={},allowed=/^(day-([1-9]|[12][0-9]|30)|stage-[0-4]|assessment-(start|end)|tool-(network|meeting|limits|scripts))$/;
+ const clean={},allowed=/^(day-([1-9]|[12][0-9]|30)|stage-[0-4]|assessment-(start|end)|tool-(network|meeting|limits|scripts)|focus-plan)$/;
  for(const [key,record] of Object.entries(source)){
   if(!allowed.test(key)||!record||typeof record!=="object"||Array.isArray(record))continue;
   const out={answers:{},checks:{},scores:{},done:record.done===true};
@@ -98,11 +98,15 @@ function tools(){
  return out;
 }
 function evaluation(){
- const k=assessment==="start"?"assessment-start":"assessment-end";
- return `<section class="panel"><span class="eyebrow">${assessment==="start"?"PUNTO DE PARTIDA":"EVALUACIÓN FINAL"}</span><h2 class="section-title">Ocho preguntas para medir tus avances</h2><p>Marca del 0 (nunca) al 4 (casi siempre). No es una prueba clínica.</p>
+ const k=assessment==="start"?"assessment-start":"assessment-end",r=window.CALMA_ANALYTICS.report(records,assessment);
+ return `<section class="panel"><span class="eyebrow">${assessment==="start"?"PUNTO DE PARTIDA":"EVALUACIÓN FINAL"}</span>
+ <h2 class="section-title">Ocho preguntas para medir tus avances</h2>
+ <p>Indica con qué frecuencia te ocurre cada dificultad: 0 (nunca) a 4 (casi siempre). Una puntuación menor significa que te ocurre con menos frecuencia. Esta herramienta es educativa, no una prueba clínica.</p>
+ <div class="notice"><b>${r.answered} de 8 preguntas respondidas.</b> Contesta todas para guardar la evaluación y ver tu análisis personal.</div>
  ${DATA.questions.map((x,i)=>`<div class="formfield" style="padding:12px 0;border-bottom:1px solid #e4e8df"><label>${i+1}. ${escapeHTML(x)}</label>${scale(k,"q"+i,4)}</div>`).join("")}
- ${field(k,"goal",assessment==="start"?"¿Qué conducta quiero mejorar?":"¿Qué conducta concreta logré mejorar?")}${complete(k,"He terminado esta evaluación")}
- <div class="row">${btn("Volver a mis avances","data-view='mi-espacio'","secondary")}${btn("Reto de 30 días","data-view='reto'")}</div></section>`;
+ ${field(k,"goal",assessment==="start"?"¿Qué conducta quiero mejorar?":"¿Qué conducta concreta logré mejorar?")}
+ <div class="row">${btn(r.complete?"Actualizar evaluación y ver análisis":"Guardar evaluación y ver análisis","data-action='finish-assessment'")}
+ ${btn("Volver a mis avances","data-view='mi-espacio'","secondary")}</div></section>`;
 }
 
 function hasWork(k){
@@ -121,6 +125,7 @@ function activityName(key){
  }
  if(key==="assessment-start")return "Evaluación inicial";
  if(key==="assessment-end")return "Evaluación final";
+ if(key==="focus-plan")return "Mi plan personal";
  const names={"tool-network":"Networking","tool-meeting":"Reuniones","tool-limits":"Límites","tool-scripts":"Frases rápidas"};
  return names[key]||"Herramientas prácticas";
 }
@@ -129,6 +134,7 @@ function activityTarget(key){
  if(key.startsWith("stage-"))return "data-stage='"+Number(key.slice(6))+"'";
  if(key==="assessment-start")return "data-view='evaluacion' data-assessment='start'";
  if(key==="assessment-end")return "data-view='evaluacion' data-assessment='end'";
+ if(key==="focus-plan")return "data-view='analisis'";
  const names={"tool-network":"networking","tool-meeting":"reuniones","tool-limits":"limites","tool-scripts":"guiones"};
  return "data-tool='"+(names[key]||"networking")+"'";
 }
@@ -173,6 +179,9 @@ function space(){
   <p class="muted">${next?"Tienes "+(30-completed)+" retos por completar. Puedes regresar a cualquiera cuando lo necesites.":"Puedes revisar tus respuestas y completar la evaluación final para comparar tus avances."}</p>
   ${next?btn(next.started?"Continuar con este reto":"Empezar este reto","data-day='"+next.number+"'"):btn("Hacer evaluación final","data-view='evaluacion' data-assessment='end'")}
  </section>
+ <section class="panel advance-section"><span class="eyebrow">TU ANÁLISIS PERSONAL</span><h2 class="section-title">Descubre tus fortalezas y puntos a mejorar</h2>
+ <p>Compara tus evaluaciones y encuentra ejercicios para lo que más te cuesta.</p>
+ ${btn("Ver mi análisis y plan","data-view='analisis'")}</section>
  <section class="panel advance-section"><div class="row between"><div><span class="eyebrow">TU RUTA</span><h2 class="section-title">Qué has hecho en los 30 días</h2></div><span class="pill">${pct}% completado</span></div>
  <p class="muted">«En práctica» significa que guardaste alguna respuesta, escala o checklist, pero aún no marcaste ese día como completado.</p>
  <div class="advance-weeks">${weeks}</div></section>
@@ -194,10 +203,10 @@ function space(){
  ${btn("Borrar progreso de este dispositivo","data-action='delete'","secondary")}</section>`;
 }
 function render(){
- const titles={"inicio":"Tu progreso empieza aquí","metodo":"Método C.A.L.M.A.","reto":"Tu reto de 30 días","herramientas":"Herramientas prácticas","evaluacion":"Mis evaluaciones","mi-espacio":"Mis avances"};
+ const titles={"inicio":"Tu progreso empieza aquí","metodo":"Método C.A.L.M.A.","reto":"Tu reto de 30 días","herramientas":"Herramientas prácticas","evaluacion":"Mis evaluaciones","mi-espacio":"Mis avances","analisis":"Mi análisis personal"};
  pageTitle.textContent=titles[view];
  nav.querySelectorAll("[data-page]").forEach(x=>x.classList.toggle("active",x.dataset.page===view));
- main.innerHTML=view==="inicio"?home():view==="metodo"?method():view==="reto"?challenge():view==="herramientas"?tools():view==="evaluacion"?evaluation():space();
+ main.innerHTML=view==="inicio"?home():view==="metodo"?method():view==="reto"?challenge():view==="herramientas"?tools():view==="evaluacion"?evaluation():view==="analisis"?window.CALMA_ANALYTICS.render(records):space();
 }
 function show(html){modal.classList.remove("hidden");document.getElementById("modal-body").innerHTML=html;}
 function close(){modal.classList.add("hidden");}
@@ -235,8 +244,15 @@ document.addEventListener("click",async ev=>{
  if(b.dataset.stage!==undefined){view="metodo";stage=Number(b.dataset.stage);render();scrollTo(0,0);return;}
  if(b.dataset.day){view="reto";day=Number(b.dataset.day);render();scrollTo(0,0);return;}
  if(b.dataset.tool){view="herramientas";tool=b.dataset.tool;render();scrollTo(0,0);return;}
+ if(b.dataset.focusArea){const area=DATA.focusAreas.find(a=>a.id===b.dataset.focusArea);if(area){value("focus-plan").answers.area=area.id;changed("focus-plan");render();}return;}
  const action=b.dataset.action;if(!action)return;
  if(action==="close")close();
+ if(action==="finish-assessment"){
+  const r=window.CALMA_ANALYTICS.report(records,assessment);
+  if(r.answered!==DATA.questions.length){alert("Faltan "+(DATA.questions.length-r.answered)+" respuestas. Contesta las ocho preguntas para continuar.");return;}
+  const key=assessment==="start"?"assessment-start":"assessment-end";
+  value(key).done=true;changed(key);view="analisis";render();scrollTo(0,0);return;
+ }
  if(action==="export")exportBackup();
  if(action==="import-file")importBackup();
  if(action==="legacy")legacyDialog();
