@@ -471,3 +471,19 @@ body{overflow-x:clip;}
 /* Reassurance about Hotmart guarantee and email-based access */
 .price-card .offer-guarantee{font-size:.88rem;line-height:1.45;font-weight:800;color:#176249;margin:12px 0 0;background:#eef6ee;border-radius:12px;padding:10px 12px;}
 @media(max-width:760px){.hero-trust{align-items:flex-start;}.price-card .offer-guarantee{font-size:.83rem;padding:10px;}}
+
+/* Centrar únicamente los mensajes debajo de "Ver cómo funciona la app" en móvil. */
+@media (max-width:760px){
+  .hero-trust{
+    width:100%;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    margin-left:auto;
+    margin-right:auto;
+  }
+  .hero-trust span{
+    justify-content:center;
+    text-align:center;
+  }
+}
