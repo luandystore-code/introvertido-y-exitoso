@@ -6,7 +6,7 @@ App PWA complementaria del curso en Hotmart Club, producto Hotmart `8875939`, to
 
 - Acceso directo sin registro, contraseña ni petición de correo.
 - Método C.A.L.M.A. en 5 etapas, reto de 30 días, autoevaluaciones y herramientas prácticas.
-- Respuestas, checklists y puntuaciones guardados en `localStorage` del navegador con clave `calma_progreso_local_v1`.
+- Panel «Mis avances» con porcentaje real del reto de 30 días (cada día cuenta solo al marcarse completado), estados por día, etapas C.A.L.M.A., evaluaciones y últimas actividades con fecha cuando se conoce.\n- Respuestas, checklists y puntuaciones guardados en `localStorage` del navegador con clave `calma_progreso_local_v1`.
 - Exportación de respaldo JSON desde «Mi espacio» e importación en otro navegador.
 - Opción voluntaria para recuperar los avances de una cuenta antigua de la app mediante su credencial anterior, sin borrarla del backend.
 - Botón para eliminar solo los avances locales de esta versión.
@@ -33,8 +33,8 @@ Añadir una clase o recurso “Mi entrenamiento interactivo C.A.L.M.A.” con el
 
 ## Comprobación sugerida
 
-1. Abrir app en pestaña nueva: debe mostrar Inicio directamente sin modal.
-2. Escribir un ejercicio; recargar y comprobar persistencia.
-3. Marcar un reto y verificar el contador.
-4. Descargar respaldo, borrar progreso local e importar el archivo.
-5. Verificar que el curso en Hotmart Club y la landing comercial sigan intactos.
+1. Abrir app en pestaña nueva: debe mostrar Inicio directamente sin modal.\n2. Abrir «Mis avances»: comprobar 0% al comenzar, 3% al completar un día y desglose de tareas en práctica, terminadas y pendientes.
+3. Escribir un ejercicio; recargar y comprobar persistencia.
+4. Marcar un reto y verificar el contador.
+5. Descargar respaldo, borrar progreso local e importar el archivo.
+6. Verificar que el curso en Hotmart Club y la landing comercial sigan intactos.
