@@ -4,7 +4,7 @@ Landing existente, renovada para el producto **Introvertido y Seguro | Método C
 
 URL publicada: https://introvertido-y-exitoso.luandylabs.workers.dev/
 
-> La ruta del Worker conserva el slug anterior por motivos técnicos. El contenido visual y metadatos de la página corresponden a la nueva edición. La landing está en preparación: **NO anunciar ni abrir tráfico de pago hasta agregar el checkout del producto nuevo**.
+> La ruta del Worker conserva el slug anterior por motivos técnicos. El contenido visual y metadatos de la página corresponden a la nueva edición. La landing ahora incluye el checkout confirmado del producto nuevo. Antes de lanzar anuncios, validar atribución, Pixel y el recorrido de pago.
 
 ## Producto mostrado
 
@@ -30,15 +30,15 @@ No se publica aquí el enlace público de la app para evitar distribuir el bono 
 - Se retiraron testimonios y estadísticas sin evidencia.
 - Se retiraron afirmaciones antiguas sobre páginas, precio y acceso vitalicio no confirmadas para esta edición.
 - FAQ aclara límites del guardado, condiciones educativas y acceso desde Hotmart.
-- CTA de navegación llevan al contenido y a la descripción de la oferta. **Botón de compra deshabilitado intencionalmente** hasta contar con checkout real.
+- CTA de navegación llevan al contenido y a la descripción de la oferta. **Botones de compra activos** con checkout Hotmart verificado.
 - Diseño responsive verde y dorado con barra inferior móvil.
 
 ## Pendiente antes de abrir anuncios
 
-1. Recibir **URL exacta del checkout de Hotmart para el producto 8875939**, sin reutilizar la URL del producto anterior.
-2. Confirmar precio real, divisa, garantía/plazo de reembolso y condiciones de acceso.
-3. Insertar checkout y precio en todos los CTA, incluido header, hero, tarjeta de precio, CTA final y barra fija móvil; asegurar preservación de UTMs/fbclid.
-4. Validar Pixel ID 3945503179000292 en la cuenta de anuncios adecuada. app.js mantiene PageView y ViewContent con content_id 8875939, sin valor monetario hasta confirmar precio.
+1. **Completado:** checkout del producto 8875939: https://pay.hotmart.com/F108322703A?checkoutMode=10
+2. **Confirmado en checkout:** precio base US$9.99, pago único; impuestos según ubicación. Verificar garantía/reembolso aplicable y condiciones de acceso en la cuenta Hotmart.
+3. **Completado:** siete CTA apuntan al nuevo checkout; app.js preserva parámetros UTM/fbclid. Confirmar comportamiento real desde anuncio.
+4. Validar Pixel ID 3945503179000292 en la cuenta de anuncios adecuada. app.js mantiene PageView y ViewContent con content_id 8875939, valor 9.99 y moneda USD.
 5. Probar recorrido completo: clic de anuncio → landing → checkout → compra de prueba → acceso a Hotmart Club → PDF de app → navegación y guardado de ejercicios.
 6. Publicar solo testimonios y métricas verificables, si los hubiera.
 
@@ -52,6 +52,6 @@ No se publica aquí el enlace público de la app para evitar distribuir el bono 
 
 ## Tracking
 
-El código de la landing mantiene el Meta Pixel anteriormente instalado, los eventos PageView y ViewContent, primera/última atribución y persistencia de UTMs/click IDs en localStorage. Cuando haya una URL nueva de checkout pay.hotmart.com, el decorador de app.js puede agregar los parámetros de atribución automáticamente.
+El código de la landing mantiene el Meta Pixel anteriormente instalado, los eventos PageView y ViewContent, primera/última atribución y persistencia de UTMs/click IDs en localStorage. Los siete enlaces al checkout pay.hotmart.com/F108322703A usan el decorador de app.js para agregar los parámetros de atribución automáticamente.
 
 **No cambiar** el Worker receptor de Webhook ni la app interactiva al configurar el checkout: son recursos independientes.
