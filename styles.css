@@ -456,3 +456,14 @@ body{overflow-x:clip;}
 @media(prefers-reduced-motion:reduce){
   .mobile-offer{transition:none;}
 }
+
+/* Comportamiento coherente de barra inferior también en tablet angosta. */
+@media (min-width:761px) and (max-width:860px){
+  .mobile-offer{
+    bottom:calc(10px + env(safe-area-inset-bottom,0px));
+    opacity:0;visibility:hidden;pointer-events:none;
+    transform:translateY(calc(100% + 20px));
+    transition:opacity .2s ease,transform .2s ease,visibility .2s;
+  }
+  .mobile-offer.is-visible{opacity:1;visibility:visible;pointer-events:auto;transform:none;}
+}
