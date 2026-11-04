@@ -467,3 +467,7 @@ body{overflow-x:clip;}
   }
   .mobile-offer.is-visible{opacity:1;visibility:visible;pointer-events:auto;transform:none;}
 }
+
+/* Reassurance about Hotmart guarantee and email-based access */
+.price-card .offer-guarantee{font-size:.88rem;line-height:1.45;font-weight:800;color:#176249;margin:12px 0 0;background:#eef6ee;border-radius:12px;padding:10px 12px;}
+@media(max-width:760px){.hero-trust{align-items:flex-start;}.price-card .offer-guarantee{font-size:.83rem;padding:10px;}}
