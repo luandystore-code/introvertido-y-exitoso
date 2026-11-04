@@ -27,6 +27,9 @@ export default {
         return new Response('No se pudo cargar este recurso. Inténtalo de nuevo.', {status:502});
       }
       const responseHeaders = new Headers(upstream.headers);
+      // Replace the raw-file policy with a policy scoped to this sales landing.
+      responseHeaders.set('Content-Security-Policy', "default-src 'self'; script-src 'self' https://connect.facebook.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.facebook.com; media-src 'self'; connect-src 'self' https://*.facebook.com https://*.facebook.net; frame-src https://www.facebook.com; object-src 'none'; base-uri 'self'; form-action 'self' https://pay.hotmart.com");
+      responseHeaders.delete('Content-Disposition');
       responseHeaders.set('Content-Type',type);
       responseHeaders.set('Cache-Control',file === 'index.html' ? 'no-store' : 'public, max-age=60');
       responseHeaders.set('X-Content-Type-Options','nosniff');
