@@ -44,8 +44,7 @@
 
   fbq('track', 'PageView');
 
-  // El precio y checkout de la nueva edición se confirmarán antes de lanzar campañas.
-  // No atribuir un importe incorrecto a este ViewContent.
+  // Producto y valor confirmados en el checkout oficial de Hotmart.
   fbq('track', 'ViewContent', {
     content_name: 'Introvertido y Seguro | Método C.A.L.M.A. de 30 Días',
     content_type: 'product',
@@ -311,7 +310,32 @@
 
 
   /* =====================================================
-     10. INICIAR
+     10. BARRA DE COMPRA MÓVIL
+     Aparece cuando el visitante deja atrás el CTA del inicio.
+     No cubre el primer mensaje ni duplica el CTA inicial.
+  ===================================================== */
+  function setupMobileCheckoutBar() {
+    const bar = document.querySelector('.mobile-offer');
+    const heroCta = document.querySelector('.hero-cta-row');
+    if (!bar || !heroCta) return;
+
+    if (!('IntersectionObserver' in window)) {
+      bar.classList.add('is-visible');
+      return;
+    }
+
+    const observer = new IntersectionObserver(function(entries) {
+      const entry = entries[0];
+      if (!entry) return;
+      // Mostrar solo cuando el CTA inicial está por encima de la pantalla.
+      const passedHeroCta = entry.boundingClientRect.bottom <= 0;
+      bar.classList.toggle('is-visible', passedHeroCta);
+    }, {threshold: 0});
+    observer.observe(heroCta);
+  }
+
+  /* =====================================================
+     11. INICIAR
   ===================================================== */
 
   if(
@@ -319,14 +343,15 @@
     'loading'
   ) {
 
-    document.addEventListener(
-      'DOMContentLoaded',
-      decorateHotmartLinks
-    );
+    document.addEventListener('DOMContentLoaded', function() {
+      decorateHotmartLinks();
+      setupMobileCheckoutBar();
+    });
 
   } else {
 
     decorateHotmartLinks();
+    setupMobileCheckoutBar();
 
   }
 
