@@ -14,6 +14,25 @@ export default (function worker(){
       if(!env.DB)return error("Base de datos no configurada",503);
       const token=authorizedToken(request);if(!token)return error("Necesitas tu clave privada",401);
       const user=await hashToken(token);
+      if((path==="/api/account/register"||path==="/api/account/login")&&request.method==="POST"){
+        let body;try{body=await request.json();}catch(e){return error("Solicitud inválida",400);}
+        const handle=body&&body.handle_hash;
+        if(typeof handle!=="string"||!/^[A-Za-z0-9_-]{43}$/.test(handle))return error("Nombre de usuario inválido",400);
+        if(path==="/api/account/register"){
+          const taken=await env.DB.prepare("SELECT handle_hash FROM user_handles WHERE handle_hash=?").bind(handle).first();
+          if(taken)return error("Ese nombre de usuario ya está ocupado",409);
+          try{
+            await env.DB.batch([
+              env.DB.prepare("INSERT INTO profiles(token_hash) VALUES(?)").bind(user),
+              env.DB.prepare("INSERT INTO user_handles(handle_hash,token_hash) VALUES(?,?)").bind(handle,user)
+            ]);
+          }catch(e){return error("No se pudo crear la cuenta; intenta con otro usuario",409);}
+          return json({ok:true});
+        }
+        const found=await env.DB.prepare("SELECT token_hash FROM user_handles WHERE handle_hash=? AND token_hash=?").bind(handle,user).first();
+        if(!found)return error("Usuario o contraseña incorrectos",401);
+        return json({ok:true});
+      }
       if(path==="/api/register"&&request.method==="POST"){
         await env.DB.prepare("INSERT OR IGNORE INTO profiles(token_hash) VALUES(?)").bind(user).run();
         return json({ok:true});
@@ -41,6 +60,7 @@ export default (function worker(){
       if(path==="/api/profile"&&request.method==="DELETE"){
         await env.DB.batch([
           env.DB.prepare("DELETE FROM entries WHERE token_hash=?").bind(user),
+          env.DB.prepare("DELETE FROM user_handles WHERE token_hash=?").bind(user),
           env.DB.prepare("DELETE FROM profiles WHERE token_hash=?").bind(user)
         ]);
         return json({ok:true,deleted:true});
