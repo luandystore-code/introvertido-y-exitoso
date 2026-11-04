@@ -522,16 +522,3 @@ body{overflow-x:clip;}
     text-align:center;
   }
 }
-
-
-/* Checkout Hotmart: importe local exacto dentro del formulario oficial. */
-.checkout-local-container{margin:44px auto 0;max-width:850px;}
-.checkout-local-intro{text-align:center;margin:0 auto 22px;max-width:680px;}
-.checkout-local-intro h3{font-size:clamp(1.5rem,3.5vw,2rem);line-height:1.18;}
-.checkout-local-intro p:not(.eyebrow){color:#d8e7df;line-height:1.6;}
-.checkout-local-frame{padding:16px;background:#fff;border-radius:22px;color:#1b332b;box-shadow:0 18px 38px #081c1540;}
-#inline_checkout{min-height:290px;max-width:100%;overflow:hidden;}
-#hotmart-inline-status{padding:50px 12px;text-align:center;color:#45675c;}
-.checkout-local-fallback{text-align:center;color:#375748;font-size:.9rem;margin:14px 0 2px;}
-.checkout-local-link{color:#175a4b;text-decoration:underline;text-underline-offset:3px;font-weight:750;}
-@media(max-width:620px){.checkout-local-container{margin-top:30px;}.checkout-local-frame{padding:10px;border-radius:16px;}.checkout-local-intro h3{font-size:1.55rem;}}
